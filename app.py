@@ -1,22 +1,15 @@
-
-# app.py — Prasad Realty (Streamlit Cloud–ready, hardened + validation)
-# - Clean HTML/CSS (no escapes), consistent buttons (nowrap), scrollable JSON
-# - Validation for login, contact form, and site-visit dialog (name/phone/email/message)
-# - Fallbacks for Streamlit versions (dialog/link_button), cached data loading (conditional)
-# - Robust paths and error handling; defensive UI guards
-
+import base64
 import json
 import os
 import re
-import base64
+from datetime import date, datetime, time
 from pathlib import Path
-from datetime import datetime, time, date
+from typing import Dict, List, Optional, Tuple
 from urllib.parse import quote_plus
-from typing import Optional, Tuple, List, Dict
 
-import streamlit as st
 import pandas as pd
 import pydeck as pdk
+import streamlit as st
 
 # --------------------------------------------------
 # Page / Theme
@@ -140,6 +133,7 @@ PRASAD_LOGO_PATH = "assets/prasad_logo.png"
 PHONE_RE = re.compile(r"^\+?[0-9][0-9\s\-()]{8,15}$")  # digits +/- separators, 9–16 chars total
 EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 
+
 def validate_name(name: str) -> Tuple[bool, Optional[str]]:
     name = (name or "").strip()
     if not name:
@@ -147,6 +141,7 @@ def validate_name(name: str) -> Tuple[bool, Optional[str]]:
     if len(name) < 2:
         return False, "Name must be at least 2 characters."
     return True, None
+
 
 def validate_phone(phone: str) -> Tuple[bool, Optional[str]]:
     phone = (phone or "").strip()
@@ -156,6 +151,7 @@ def validate_phone(phone: str) -> Tuple[bool, Optional[str]]:
         return False, "Enter a valid phone (digits, optional +, spaces/()- allowed)."
     return True, None
 
+
 def validate_email(email: str, allow_blank: bool = True) -> Tuple[bool, Optional[str]]:
     email = (email or "").strip()
     if allow_blank and not email:
@@ -164,6 +160,7 @@ def validate_email(email: str, allow_blank: bool = True) -> Tuple[bool, Optional
         return False, "Enter a valid email address."
     return True, None
 
+
 def validate_message(msg: str) -> Tuple[bool, Optional[str]]:
     msg = (msg or "").strip()
     if not msg:
@@ -171,6 +168,7 @@ def validate_message(msg: str) -> Tuple[bool, Optional[str]]:
     if len(msg) < 5:
         return False, "Message must be at least 5 characters."
     return True, None
+
 
 # --------------------------------------------------
 # Helpers
@@ -182,10 +180,12 @@ def brand_logo_img(path: str, size: int = 64) -> str:
             return ""
         with open(path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode("utf-8")
-        return '<img class="brand-logo" src="data:image/png;base b64=b64, w=size, h=size
+        return (
+            f"data:image/png;base64,{b64}"
         )
     except Exception:
         return ""
+
 
 def toast_ok(msg: str):
     """Toast feedback, fallback to success if toast not available."""
@@ -194,32 +194,48 @@ def toast_ok(msg: str):
     except Exception:
         st.success(msg)
 
+
 def safe_link_button(label: str, url: str, help: Optional[str] = None, key: Optional[str] = None):
     """Use st.link_button if available, else a styled <a role="button">."""
     if hasattr(st, "link_button"):
         st.link_button(label, url=url, help=help, key=key)
     else:
-        html = '{url}{label}</a>'.format(
-            url=url, label=label
+        html = (
+            f"{url}{label}</a>"
         )
         st.markdown(html, unsafe_allow_html=True)
+
 
 # --------------------------------------------------
 # Session defaults
 # --------------------------------------------------
-if "user" not in st.session_state: st.session_state.user = None
-if "leads" not in st.session_state: st.session_state.leads = []
-if "favorites" not in st.session_state: st.session_state.favorites = set()
-if "visit_fallback_open" not in st.session_state: st.session_state.visit_fallback_open = False
-if "visit_fallback_p" not in st.session_state: st.session_state.visit_fallback_p = None
+if "user" not in st.session_state:
+    st.session_state.user = None
+if "leads" not in st.session_state:
+    st.session_state.leads = []
+if "favorites" not in st.session_state:
+    st.session_state.favorites = set()
+if "visit_fallback_open" not in st.session_state:
+    st.session_state.visit_fallback_open = False
+if "visit_fallback_p" not in st.session_state:
+    st.session_state.visit_fallback_p = None
+
 
 def _init_filters():
     defaults = {
-        "s_region": "All", "s_condition": "All", "s_type": "All",
-        "s_min_bed": 0, "s_budget": (0, 10_000_000), "s_sort": "Newest", "s_search": ""
+        "s_region": "All",
+        "s_condition": "All",
+        "s_type": "All",
+        "s_min_bed": 0,
+        "s_budget": (0, 10_000_000),
+        "s_sort": "Newest",
+        "s_search": "",
     }
     for k, v in defaults.items():
-        if k not in st.session_state: st.session_state[k] = v
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+
 _init_filters()
 
 # --------------------------------------------------
@@ -229,7 +245,9 @@ with st.sidebar:
     st.title("Prasad Realty")
     st.caption("Visakhapatnam · Residential & Plots")
 
-    ig_link_html = "{url}Follow</a>".format(url=PRASAD_IG_URL)
+    ig_link_html = (
+        f"{PRASAD_IG_URL}Follow</a>"
+    )
     st.markdown(
         """
         <div class='brand-card'>
@@ -249,9 +267,9 @@ with st.sidebar:
             logo=brand_logo_img(PRASAD_LOGO_PATH, size=64),
             handle=PRASAD_IG_HANDLE,
             ig_link=ig_link_html,
-            phone=PRASAD_PHONE
+            phone=PRASAD_PHONE,
         ),
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     if st.session_state.user:
@@ -283,45 +301,100 @@ def _read_json(path: Path) -> List[Dict]:
     except Exception:
         return []
 
+
 FALLBACK = [
-    {"id":7,"title":"Independent 4BHK with garden","region_key":"Hanumanthawaka","condition":"New","home_type":"Individual",
-     "bedrooms":4,"bathrooms":4,"area_sqft":2400,"price_inr":22500000,"address":"Colony Rd, Hanumanthawaka",
-     "image":"https://picsum.photos/seed/hanuman3/800/500","insta_url":"","lat":17.7549,"lng":83.3204,
-     "images":["https://picsum.photos/seed/h3/800/500","https://picsum.photos/seed/h4/800/500"],
-     "distances":{"Beach":"3.2 km","School":"750 m","Hospital":"1.1 km"}},
-    {"id":9,"title":"MVP 2BHK corner flat","region_key":"MVP Colony","condition":"New","home_type":"Apartment",
-     "bedrooms":2,"bathrooms":2,"area_sqft":1050,"price_inr":7800000,"address":"Sector 5, MVP Colony",
-     "image":"https://picsum.photos/seed/mvp1/800/500","insta_url":"","lat":17.7487,"lng":83.3369,
-     "images":["https://picsum.photos/seed/m1/800/500","https://picsum.photos/seed/m2/800/500"]},
-    {"id":1,"title":"2BHK near park","region_key":"Visalakshinagar","condition":"New","home_type":"Apartment",
-     "bedrooms":2,"bathrooms":2,"area_sqft":980,"price_inr":6500000,"address":"Plot 23, Visalakshinagar",
-     "image":"https://picsum.photos/seed/visalakshi1/800/500","insta_url":"","lat":17.7480,"lng":83.3575,
-     "images":["https://picsum.photos/seed/v1/800/500","https://picsum.photos/seed/v2/800/500"]},
-    {"id":4,"title":"Luxury 4BHK penthouse","region_key":"MVP Colony","condition":"New","home_type":"Apartment",
-     "bedrooms":4,"bathrooms":4,"area_sqft":2200,"price_inr":32000000,"address":"Sector 1, MVP Colony",
-     "image":"https://picsum.photos/seed/mvp4/800/500","insta_url":"","lat":17.7387,"lng":83.3277,
-     "images":["https://picsum.photos/seed/m4/800/500","https://picsum.photos/seed/m5/800/500"]}
+    {
+        "id": 7,
+        "title": "Independent 4BHK with garden",
+        "region_key": "Hanumanthawaka",
+        "condition": "New",
+        "home_type": "Individual",
+        "bedrooms": 4,
+        "bathrooms": 4,
+        "area_sqft": 2400,
+        "price_inr": 22500000,
+        "address": "Colony Rd, Hanumanthawaka",
+        "image": "https://picsum.photos/seed/hanuman3/800/500",
+        "insta_url": "",
+        "lat": 17.7549,
+        "lng": 83.3204,
+        "images": [
+            "https://picsum.photos/seed/h3/800/500",
+            "https://picsum.photos/seed/h4/800/500",
+        ],
+        "distances": {"Beach": "3.2 km", "School": "750 m", "Hospital": "1.1 km"},
+    },
+    {
+        "id": 9,
+        "title": "MVP 2BHK corner flat",
+        "region_key": "MVP Colony",
+        "condition": "New",
+        "home_type": "Apartment",
+        "bedrooms": 2,
+        "bathrooms": 2,
+        "area_sqft": 1050,
+        "price_inr": 7800000,
+        "address": "Sector 5, MVP Colony",
+        "image": "https://picsum.photos/seed/mvp1/800/500",
+        "insta_url": "",
+        "lat": 17.7487,
+        "lng": 83.3369,
+        "images": [
+            "https://picsum.photos/seed/m1/800/500",
+            "https://picsum.photos/seed/m2/800/500",
+        ],
+    },
+    {
+        "id": 1,
+        "title": "2BHK near park",
+        "region_key": "Visalakshinagar",
+        "condition": "New",
+        "home_type": "Apartment",
+        "bedrooms": 2,
+        "bathrooms": 2,
+        "area_sqft": 980,
+        "price_inr": 6500000,
+        "address": "Plot 23, Visalakshinagar",
+        "image": "https://picsum.photos/seed/visalakshi1/800/500",
+        "insta_url": "",
+        "lat": 17.7480,
+        "lng": 83.3575,
+        "images": [
+            "https://picsum.photos/seed/v1/800/500",
+            "https://picsum.photos/seed/v2/800/500",
+        ],
+    },
+    {
+        "id": 4,
+        "title": "Luxury 4BHK penthouse",
+        "region_key": "MVP Colony",
+        "condition": "New",
+        "home_type": "Apartment",
+        "bedrooms": 4,
+        "bathrooms": 4,
+        "area_sqft": 2200,
+        "price_inr": 32000000,
+        "address": "Sector 1, MVP Colony",
+        "image": "https://picsum.photos/seed/mvp4/800/500",
+        "insta_url": "",
+        "lat": 17.7387,
+        "lng": 83.3277,
+        "images": [
+            "https://picsum.photos/seed/m4/800/500",
+            "https://picsum.photos/seed/m5/800/500",
+        ],
+    },
 ]
 
-# Conditional caching for broad compatibility
 if hasattr(st, "cache_data"):
+
     @st.cache_data(show_spinner=False)
     def load_data() -> List[Dict]:
         candidate_paths = [
             Path.cwd() / "properties.json",
-            Path(__file__).parent / "properties.json" if "__file__" in globals() else Path.cwd() / "properties.json",
-        ]
-        for p in candidate_paths:
-            if p.exists():
-                data = _read_json(p)
-                if isinstance(data, list) and data:
-                    return data
-        return FALLBACK
-else:
-    def load_data() -> List[Dict]:
-        candidate_paths = [
-            Path.cwd() / "properties.json",
-            Path(__file__).parent / "properties.json" if "__file__" in globals() else Path.cwd() / "properties.json",
+            Path(__file__).parent / "properties.json"
+            if "__file__" in globals()
+            else Path.cwd() / "properties.json",
         ]
         for p in candidate_paths:
             if p.exists():
@@ -330,7 +403,26 @@ else:
                     return data
         return FALLBACK
 
-data = load_data()
+else:
+
+    def load_data() -> List[Dict]:
+        candidate_paths = [
+            Path.cwd() / "properties.json",
+            Path(__file__).parent / "properties.json"
+            if "__file__" in globals()
+            else Path.cwd() / "properties.json",
+        ]
+        for p in candidate_paths:
+            if p.exists():
+                data = _read_json(p)
+                if isinstance(data, list) and data:
+                    return data
+        return FALLBACK
+
+
+with st.spinner("Loading properties..."):
+    data = load_data()
+
 regions = sorted({p.get("region_key", "") for p in data if p.get("region_key")})
 prices = [p.get("price_inr", 0) for p in data]
 pmin_data = int(min(prices) if prices else 0)
@@ -339,8 +431,12 @@ pmax_data = int(max(prices) if prices else 10_000_000)
 # --------------------------------------------------
 # Hero + Mobile CTA bar
 # --------------------------------------------------
-wa_link_html = "{url}WhatsApp</a>".format(url=PRASAD_WHATSAPP)
-ig_link_html_small = "<a href='{url}' target='_blank'PRASAD_IG_URL)
+wa_link_html = (
+    f"{PRASAD_WHATSAPP}WhatsApp</a>"
+)
+ig_link_html_small = (
+    f"{PRASAD_IG_URL}Instagram</a>"
+)
 
 st.markdown(
     """
@@ -354,7 +450,7 @@ st.markdown(
       </div>
     </div>
     """.format(wa_link=wa_link_html),
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 st.markdown(
@@ -364,7 +460,7 @@ st.markdown(
       {ig_link}
     </div>
     """.format(wa_link=wa_link_html, ig_link=ig_link_html_small),
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 # --------------------------------------------------
@@ -396,16 +492,14 @@ with c1:
     st.session_state.s_region = st.selectbox("Region", region_options, index=region_index)
 with c2:
     st.session_state.s_condition = st.selectbox(
-        "Condition", ["All", "New", "Old"],
-        index=["All", "New", "Old"].index(st.session_state.s_condition)
+        "Condition", ["All", "New", "Old"], index=["All", "New", "Old"].index(st.session_state.s_condition)
     )
 with c3:
     st.session_state.s_type = st.selectbox(
-        "Type", ["All", "Individual", "Apartment"],
-        index=["All", "Individual", "Apartment"].index(st.session_state.s_type)
+        "Type", ["All", "Individual", "Apartment"], index=["All", "Individual", "Apartment"].index(st.session_state.s_type)
     )
 with c4:
-    beds_opts = [0,1,2,3,4,5]
+    beds_opts = [0, 1, 2, 3, 4, 5]
     idx = beds_opts.index(st.session_state.s_min_bed) if st.session_state.s_min_bed in beds_opts else 0
     st.session_state.s_min_bed = st.selectbox("Min bedrooms", beds_opts, index=idx)
 with c5:
@@ -416,8 +510,7 @@ with c5:
     if min_v > max_v:  # ensure order
         min_v, max_v = pmin_data, pmax_data
     st.session_state.s_budget = st.slider(
-        "Budget (₹)", min_value=pmin_data, max_value=pmax_data,
-        value=(min_v, max_v), step=500_000
+        "Budget (₹)", min_value=pmin_data, max_value=pmax_data, value=(min_v, max_v), step=500_000
     )
 with c6:
     sort_opts = ["Newest", "Price ↑", "Price ↓", "Area ↑", "Area ↓"]
@@ -433,26 +526,38 @@ st.markdown("</div>", unsafe_allow_html=True)
 # --------------------------------------------------
 def matches(p: Dict) -> bool:
     s = st.session_state
-    if s.s_region != "All" and p.get("region_key") != s.s_region: return False
-    if s.s_condition != "All" and p.get("condition") != s.s_condition: return False
-    if s.s_type != "All" and p.get("home_type") != s.s_type: return False
-    if s.s_min_bed and int(p.get("bedrooms", 0)) < int(s.s_min_bed): return False
+    if s.s_region != "All" and p.get("region_key") != s.s_region:
+        return False
+    if s.s_condition != "All" and p.get("condition") != s.s_condition:
+        return False
+    if s.s_type != "All" and p.get("home_type") != s.s_type:
+        return False
+    if s.s_min_bed and int(p.get("bedrooms", 0)) < int(s.s_min_bed):
+        return False
     bmin, bmax = s.s_budget
     price = int(p.get("price_inr", 0))
-    if not (int(bmin) <= price <= int(bmax)): return False
+    if not (int(bmin) <= price <= int(bmax)):
+        return False
     qlc = (s.s_search or "").lower().strip()
     if qlc:
-        hay = (p.get("title","") + " " + p.get("address","")).lower()
-        if qlc not in hay: return False
+        hay = (p.get("title", "") + " " + p.get("address", "")).lower()
+        if qlc not in hay:
+            return False
     return True
+
 
 def sorter_key(p: Dict):
     s = st.session_state
-    if s.s_sort == "Price ↑": return p.get("price_inr", 0)
-    if s.s_sort == "Price ↓": return -p.get("price_inr", 0)
-    if s.s_sort == "Area ↑": return p.get("area_sqft", 0)
-    if s.s_sort == "Area ↓": return -p.get("area_sqft", 0)
+    if s.s_sort == "Price ↑":
+        return p.get("price_inr", 0)
+    if s.s_sort == "Price ↓":
+        return -p.get("price_inr", 0)
+    if s.s_sort == "Area ↑":
+        return p.get("area_sqft", 0)
+    if s.s_sort == "Area ↓":
+        return -p.get("area_sqft", 0)
     return -p.get("id", 0)  # Newest (by id desc)
+
 
 filtered = sorted([p for p in data if matches(p)], key=sorter_key)
 
@@ -460,13 +565,13 @@ filtered = sorted([p for p in data if matches(p)], key=sorter_key)
 # Dialog helper (with validation) + fallbacks
 # --------------------------------------------------
 def save_visit_lead(
-    p: Dict, name: str, phone: str, email: str,
-    visit_date: date, visit_time: time, note: str
+    p: Dict, name: str, phone: str, email: str, visit_date: date, visit_time: time, note: str
 ) -> Tuple[bool, List[str]]:
     errors: List[str] = []
 
     ok_name, err_name = validate_name(name)
-    if not ok_name: errors.append(err_name)
+    if not ok_name:
+        errors.append(err_name)
 
     # At least one contact method required
     phone_clean = (phone or "").strip()
@@ -476,10 +581,12 @@ def save_visit_lead(
     else:
         if phone_clean:
             ok_ph, err_ph = validate_phone(phone_clean)
-            if not ok_ph: errors.append(err_ph)
+            if not ok_ph:
+                errors.append(err_ph)
         if email_clean:
             ok_em, err_em = validate_email(email_clean, allow_blank=False)
-            if not ok_em: errors.append(err_em)
+            if not ok_em:
+                errors.append(err_em)
 
     # Date/time must be set (Streamlit provides defaults, but validate anyway)
     if not isinstance(visit_date, date):
@@ -492,28 +599,35 @@ def save_visit_lead(
 
     lead = {
         "ts": datetime.now().isoformat(timespec="seconds"),
-        "property_id": p.get("id"), "title": p.get("title"), "region": p.get("region_key"),
-        "name": name.strip(), "phone": phone_clean, "email": email_clean,
-        "visit_date": str(visit_date), "visit_time": str(visit_time),
-        "note": (note or "").strip(), "source": "site_visit"
+        "property_id": p.get("id"),
+        "title": p.get("title"),
+        "region": p.get("region_key"),
+        "name": name.strip(),
+        "phone": phone_clean,
+        "email": email_clean,
+        "visit_date": str(visit_date),
+        "visit_time": str(visit_time),
+        "note": (note or "").strip(),
+        "source": "site_visit",
     }
     st.session_state.leads.append(lead)
     return True, []
+
 
 def open_visit_dialog(p: Dict):
     """Open a Streamlit dialog if available; else fallback to a page section."""
     if hasattr(st, "dialog"):
         @st.dialog("Book a site visit", width="large")
         def _dlg():
-            st.markdown("**{t}** · {r}".format(t=p.get('title',''), r=p.get('region_key','')))
-            visit_date = st.date_input("Date", key="dlg_date_{id}".format(id=p.get("id","x")))
-            visit_time = st.time_input("Time", value=time(11,30), key="dlg_time_{id}".format(id=p.get("id","x")))
-            name = st.text_input("Your name", key="dlg_nm_{id}".format(id=p.get("id","x")))
-            phone = st.text_input("Phone", key="dlg_ph_{id}".format(id=p.get("id","x")))
-            email = st.text_input("Email", key="dlg_em_{id}".format(id=p.get("id","x")))
-            note = st.text_area("Note", key="dlg_nt_{id}".format(id=p.get("id","x")))
+            st.markdown("**{t}** · {r}".format(t=p.get("title", ""), r=p.get("region_key", "")))
+            visit_date = st.date_input("Date", key="dlg_date_{id}".format(id=p.get("id", "x")))
+            visit_time = st.time_input("Time", value=time(11, 30), key="dlg_time_{id}".format(id=p.get("id", "x")))
+            name = st.text_input("Your name", key="dlg_nm_{id}".format(id=p.get("id", "x")))
+            phone = st.text_input("Phone", key="dlg_ph_{id}".format(id=p.get("id", "x")))
+            email = st.text_input("Email", key="dlg_em_{id}".format(id=p.get("id", "x")))
+            note = st.text_area("Note", key="dlg_nt_{id}".format(id=p.get("id", "x")))
 
-            if st.button("Request visit", key="dlg_req_{id}".format(id=p.get("id","x"))):
+            if st.button("Request visit", key="dlg_req_{id}".format(id=p.get("id", "x"))):
                 ok, errs = save_visit_lead(p, name, phone, email, visit_date, visit_time, note)
                 if ok:
                     toast_ok("Visit requested. We'll contact you soon.")
@@ -521,19 +635,20 @@ def open_visit_dialog(p: Dict):
                 else:
                     for e in errs:
                         st.error(e)
+
         _dlg()
     elif hasattr(st, "experimental_dialog"):
         @st.experimental_dialog("Book a site visit")
         def _dlg():
-            st.markdown("**{t}** · {r}".format(t=p.get('title',''), r=p.get('region_key','')))
-            visit_date = st.date_input("Date", key="xdlg_date_{id}".format(id=p.get("id","x")))
-            visit_time = st.time_input("Time", value=time(11,30), key="xdlg_time_{id}".format(id=p.get("id","x")))
-            name = st.text_input("Your name", key="xdlg_nm_{id}".format(id=p.get("id","x")))
-            phone = st.text_input("Phone", key="xdlg_ph_{id}".format(id=p.get("id","x")))
-            email = st.text_input("Email", key="xdlg_em_{id}".format(id=p.get("id","x")))
-            note = st.text_area("Note", key="xdlg_nt_{id}".format(id=p.get("id","x")))
+            st.markdown("**{t}** · {r}".format(t=p.get("title", ""), r=p.get("region_key", "")))
+            visit_date = st.date_input("Date", key="xdlg_date_{id}".format(id=p.get("id", "x")))
+            visit_time = st.time_input("Time", value=time(11, 30), key="xdlg_time_{id}".format(id=p.get("id", "x")))
+            name = st.text_input("Your name", key="xdlg_nm_{id}".format(id=p.get("id", "x")))
+            phone = st.text_input("Phone", key="xdlg_ph_{id}".format(id=p.get("id", "x")))
+            email = st.text_input("Email", key="xdlg_em_{id}".format(id=p.get("id", "x")))
+            note = st.text_area("Note", key="xdlg_nt_{id}".format(id=p.get("id", "x")))
 
-            if st.button("Request visit", key="xdlg_req_{id}".format(id=p.get("id","x"))):
+            if st.button("Request visit", key="xdlg_req_{id}".format(id=p.get("id", "x"))):
                 ok, errs = save_visit_lead(p, name, phone, email, visit_date, visit_time, note)
                 if ok:
                     toast_ok("Visit requested. We'll contact you soon.")
@@ -541,66 +656,105 @@ def open_visit_dialog(p: Dict):
                 else:
                     for e in errs:
                         st.error(e)
+
         _dlg()
     else:
         st.session_state.visit_fallback_p = p
         st.session_state.visit_fallback_open = True
 
+
 # --------------------------------------------------
-# Grid + actions
+# Listings + Map
 # --------------------------------------------------
+st.markdown("## Listings")
+
 if not filtered:
     st.warning("No properties match your filters.")
 else:
-    map_df = pd.DataFrame([
-        {"lat": p.get("lat"), "lon": p.get("lng"), "title": p.get("title",""), "price": p.get("price_inr",0)}
-        for p in filtered if p.get("lat") and p.get("lng")
-    ])
+    map_df = pd.DataFrame(
+        [
+            {
+                "lat": p.get("lat"),
+                "lon": p.get("lng"),
+                "title": p.get("title", ""),
+                "price": p.get("price_inr", 0),
+            }
+            for p in filtered
+            if p.get("lat") and p.get("lng")
+        ]
+    )
     if not map_df.empty:
         st.markdown("### Map view")
-        layer = pdk.Layer(
-            "ScatterplotLayer", data=map_df, get_position='[lon, lat]',
-            get_fill_color='[34, 211, 238, 160]', get_radius=60, pickable=True
-        )
-        vs = pdk.ViewState(latitude=float(map_df.lat.mean()), longitude=float(map_df.lon.mean()), zoom=12)
-        st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=vs,
-                                 tooltip={"text": "{title} — ₹{price}"}))
+        try:
+            layer = pdk.Layer(
+                "ScatterplotLayer",
+                data=map_df,
+                get_position="[lon, lat]",
+                get_fill_color="[34, 211, 238, 160]",
+                get_radius=60,
+                pickable=True,
+            )
+            vs = pdk.ViewState(
+                latitude=float(map_df.lat.mean()), longitude=float(map_df.lon.mean()), zoom=12
+            )
+            st.pydeck_chart(
+                pdk.Deck(
+                    layers=[layer],
+                    initial_view_state=vs,
+                    tooltip={"text": "{title} — ₹{price}"},
+                )
+            )
+        except Exception:
+            st.info("Map is unavailable at the moment.")
 
     cols = st.columns(3)
     for i, p in enumerate(filtered):
         with cols[i % 3]:
             st.markdown("<div class='property-card'>", unsafe_allow_html=True)
 
-            st.image(p.get("image",""), use_column_width=True)
-            st.markdown("**{t}**".format(t=p.get('title',"")))
-            st.markdown("<span class='price'>₹{n:,.0f}</span>".format(n=float(p.get('price_inr',0))), unsafe_allow_html=True)
+            st.image(p.get("image", ""), use_column_width=True)
+            st.markdown("**{t}**".format(t=p.get("title", "")))
             st.markdown(
-                "<span class='badge'>{rk}</span><span class='badge'>{c}</span>"
-                "<span class='badge'>{ht}</span><span class='badge'>{br} BR</span>"
+                "<span class='price'>₹{n:,.0f}</span>".format(n=float(p.get("price_inr", 0))),
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                "<span class='badge'>{rk}</span>"
+                "<span class='badge'>{c}</span>"
+                "<span class='badge'>{ht}</span>"
+                "<span class='badge'>{br} BR</span>"
                 "<span class='badge'>{sf} sqft</span>".format(
-                    rk=p.get('region_key',""),
-                    c=p.get('condition',""),
-                    ht=p.get('home_type',""),
-                    br=p.get('bedrooms',0),
-                    sf=p.get('area_sqft',0)
+                    rk=p.get("region_key", ""),
+                    c=p.get("condition", ""),
+                    ht=p.get("home_type", ""),
+                    br=p.get("bedrooms", 0),
+                    sf=p.get("area_sqft", 0),
                 ),
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
             dists = p.get("distances", {})
             if dists:
                 st.markdown(
-                    " ".join(["<span class='badge'>{k}: {v}</span>".format(k=k, v=v) for k, v in dists.items()]),
-                    unsafe_allow_html=True
+                    " ".join(
+                        [
+                            "<span class='badge'>{k}: {v}</span>".format(k=k, v=v)
+                            for k, v in dists.items()
+                        ]
+                    ),
+                    unsafe_allow_html=True,
                 )
             st.caption(p.get("address", ""))
 
             # Gallery
-            pics = [p.get("image","")] + p.get("images", [])
+            pics = [p.get("image", "")] + p.get("images", [])
             pics = [x for x in pics if x]
             if pics:
-                sel = st.selectbox("Gallery", options=range(len(pics)),
-                                   format_func=lambda idx: "Photo {n}".format(n=idx+1),
-                                   key="gal_{id}".format(id=p.get('id', i)))
+                sel = st.selectbox(
+                    "Gallery",
+                    options=range(len(pics)),
+                    format_func=lambda idx: "Photo {n}".format(n=idx + 1),
+                    key="gal_{id}".format(id=p.get("id", i)),
+                )
                 st.image(pics[sel], use_column_width=True)
 
             # CTAs
@@ -609,17 +763,30 @@ else:
             with b1:
                 insta = p.get("insta_url", "")
                 if insta:
-                    safe_link_button("Instagram", url=insta, help="View post", key="insta_{id}".format(id=p.get('id',i)))
+                    safe_link_button(
+                        "Instagram",
+                        url=insta,
+                        help="View post",
+                        key="insta_{id}".format(id=p.get("id", i)),
+                    )
                 else:
-                    st.button("Instagram", key="insta_disabled_{id}".format(id=p.get('id',i)), disabled=True)
+                    st.button(
+                        "Instagram", key="insta_disabled_{id}".format(id=p.get("id", i)), disabled=True
+                    )
             with b2:
-                txt = quote_plus("Hi Prasad Realty, I'm interested in '{t}' in {r}.".format(
-                    t=p.get('title',''), r=p.get('region_key','')))
+                txt = quote_plus(
+                    "Hi Prasad Realty, I'm interested in '{t}' in {r}.".format(
+                        t=p.get("title", ""), r=p.get("region_key", "")
+                    )
+                )
                 utm = "utm_source=streamlit&utm_medium=cta&utm_campaign=prasad_demo"
-                safe_link_button("WhatsApp", url="{wa}?text={txt}&{utm}".format(wa=PRASAD_WHATSAPP, txt=txt, utm=utm),
-                                 key="wa_{id}".format(id=p.get('id',i)))
+                safe_link_button(
+                    "WhatsApp",
+                    url="{wa}?text={txt}&{utm}".format(wa=PRASAD_WHATSAPP, txt=txt, utm=utm),
+                    key="wa_{id}".format(id=p.get("id", i)),
+                )
             with b3:
-                pid = p.get('id', i)
+                pid = p.get("id", i)
                 fav_key = "fav_{id}".format(id=pid)
                 is_fav = pid in st.session_state.favorites
                 if st.button(("💙 Unfavorite" if is_fav else "❤️ Favorite"), key=fav_key):
@@ -630,13 +797,15 @@ else:
                         st.session_state.favorites.add(pid)
                         toast_ok("Added to favorites")
             with b4:
-                pid = p.get('id', i)
+                pid = p.get("id", i)
                 if st.button("Details", key="d_{id}".format(id=pid)):
-                    st.session_state["show_{id}".format(id=pid)] = not st.session_state.get("show_{id}".format(id=pid), False)
+                    st.session_state["show_{id}".format(id=pid)] = not st.session_state.get(
+                        "show_{id}".format(id=pid), False
+                    )
             st.markdown("</div>", unsafe_allow_html=True)
 
             # Details expander + EMI + Book visit
-            pid = p.get('id', i)
+            pid = p.get("id", i)
             if st.session_state.get("show_{id}".format(id=pid), False):
                 with st.expander("Details", expanded=True):
                     st.markdown("<div class='json-box'>", unsafe_allow_html=True)
@@ -646,16 +815,29 @@ else:
                     st.markdown("**EMI Calculator**")
                     emi1, emi2, emi3 = st.columns(3)
                     with emi1:
-                        loan_amt = st.number_input("Loan amount (₹)", value=float(p.get("price_inr",0)),
-                                                   min_value=0.0, step=100000.0, key="loan_{id}".format(id=pid))
+                        loan_amt = st.number_input(
+                            "Loan amount (₹)",
+                            value=float(p.get("price_inr", 0)),
+                            min_value=0.0,
+                            step=100000.0,
+                            key="loan_{id}".format(id=pid),
+                        )
                     with emi2:
-                        rate = st.number_input("Interest (% p.a.)", value=8.5, min_value=0.0, step=0.1, key="rate_{id}".format(id=pid))
+                        rate = st.number_input(
+                            "Interest (% p.a.)",
+                            value=8.5,
+                            min_value=0.0,
+                            step=0.1,
+                            key="rate_{id}".format(id=pid),
+                        )
                     with emi3:
-                        years = st.number_input("Tenure (years)", value=20, min_value=1, step=1, key="years_{id}".format(id=pid))
+                        years = st.number_input(
+                            "Tenure (years)", value=20, min_value=1, step=1, key="years_{id}".format(id=pid)
+                        )
                     r = (rate / 100.0) / 12.0
                     n = int(years * 12)
                     if n > 0:
-                        emi = (loan_amt / n) if r == 0 else loan_amt * r * ((1 + r)**n) / (((1 + r)**n) - 1)
+                        emi = (loan_amt / n) if r == 0 else loan_amt * r * ((1 + r) ** n) / (((1 + r) ** n) - 1)
                     else:
                         emi = 0.0
                     st.write("**Estimated EMI:** ₹{m:,.0f} / month".format(m=emi))
@@ -671,16 +853,16 @@ else:
 if st.session_state.visit_fallback_open and st.session_state.visit_fallback_p:
     p = st.session_state.visit_fallback_p
     st.markdown("### Book a site visit (fallback)")
-    st.markdown("**{t}** · {r}".format(t=p.get('title',''), r=p.get('region_key','')))
-    visit_date = st.date_input("Date", key="fb_date_{id}".format(id=p.get('id','x')))
-    visit_time = st.time_input("Time", value=time(11,30), key="fb_time_{id}".format(id=p.get('id','x')))
-    name = st.text_input("Your name", key="fb_nm_{id}".format(id=p.get('id','x')))
-    phone = st.text_input("Phone", key="fb_ph_{id}".format(id=p.get('id','x')))
-    email = st.text_input("Email", key="fb_em_{id}".format(id=p.get('id','x')))
-    note = st.text_area("Note", key="fb_nt_{id}".format(id=p.get('id','x')))
+    st.markdown("**{t}** · {r}".format(t=p.get("title", ""), r=p.get("region_key", "")))
+    visit_date = st.date_input("Date", key="fb_date_{id}".format(id=p.get("id", "x")))
+    visit_time = st.time_input("Time", value=time(11, 30), key="fb_time_{id}".format(id=p.get("id", "x")))
+    name = st.text_input("Your name", key="fb_nm_{id}".format(id=p.get("id", "x")))
+    phone = st.text_input("Phone", key="fb_ph_{id}".format(id=p.get("id", "x")))
+    email = st.text_input("Email", key="fb_em_{id}".format(id=p.get("id", "x")))
+    note = st.text_area("Note", key="fb_nt_{id}".format(id=p.get("id", "x")))
     cc1, cc2 = st.columns(2)
     with cc1:
-        if st.button("Request visit", key="fb_req_{id}".format(id=p.get('id','x'))):
+        if st.button("Request visit", key="fb_req_{id}".format(id=p.get("id", "x"))):
             ok, errs = save_visit_lead(p, name, phone, email, visit_date, visit_time, note)
             if ok:
                 toast_ok("Visit requested. We'll contact you soon.")
@@ -701,10 +883,13 @@ if st.session_state.visit_fallback_open and st.session_state.visit_fallback_p:
 # --------------------------------------------------
 st.markdown("---")
 st.subheader("Quick contact")
-qc1, qc2, qc3 = st.columns([2,2,3])
-with qc1: qn = st.text_input("Your name", key="qc_name")
-with qc2: qp = st.text_input("Phone", key="qc_phone")
-with qc3: qe = st.text_input("Email", key="qc_email")
+qc1, qc2, qc3 = st.columns([2, 2, 3])
+with qc1:
+    qn = st.text_input("Your name", key="qc_name")
+with qc2:
+    qp = st.text_input("Phone", key="qc_phone")
+with qc3:
+    qe = st.text_input("Email", key="qc_email")
 msg = st.text_area("Message", key="qc_msg")
 
 cc1, cc2 = st.columns(2)
@@ -712,7 +897,8 @@ with cc1:
     if st.button("Send message", key="send_msg"):
         errs: List[str] = []
         ok_n, err_n = validate_name(qn)
-        if not ok_n: errs.append(err_n)
+        if not ok_n:
+            errs.append(err_n)
 
         qp_clean = (qp or "").strip()
         qe_clean = (qe or "").strip()
@@ -721,13 +907,16 @@ with cc1:
         else:
             if qp_clean:
                 ok_p, err_p = validate_phone(qp_clean)
-                if not ok_p: errs.append(err_p)
+                if not ok_p:
+                    errs.append(err_p)
             if qe_clean:
                 ok_e, err_e = validate_email(qe_clean, allow_blank=False)
-                if not ok_e: errs.append(err_e)
+                if not ok_e:
+                    errs.append(err_e)
 
         ok_m, err_m = validate_message(msg)
-        if not ok_m: errs.append(err_m)
+        if not ok_m:
+            errs.append(err_m)
 
         if errs:
             for e in errs:
@@ -735,9 +924,16 @@ with cc1:
         else:
             lead = {
                 "ts": datetime.now().isoformat(timespec="seconds"),
-                "property_id": None, "title": None, "region": None,
-                "name": qn.strip(), "phone": qp_clean, "email": qe_clean,
-                "visit_date": "", "visit_time": "", "note": msg.strip(), "source": "contact_form"
+                "property_id": None,
+                "title": None,
+                "region": None,
+                "name": qn.strip(),
+                "phone": qp_clean,
+                "email": qe_clean,
+                "visit_date": "",
+                "visit_time": "",
+                "note": (msg or "").strip(),
+                "source": "contact_form",
             }
             st.session_state.leads.append(lead)
             toast_ok("Message saved (demo).")
@@ -748,8 +944,8 @@ with cc2:
         st.download_button(
             "Download leads (CSV)",
             data=df.to_csv(index=False).encode("utf-8"),
-            file_name="leads.csv", mime="text/csv"
+            file_name="leads.csv",
+            mime="text/csv",
         )
-       else:
+    else:
         st.button("Download leads (CSV)", key="dl_disabled", disabled=True)
-
