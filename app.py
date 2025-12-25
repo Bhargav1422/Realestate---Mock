@@ -161,8 +161,9 @@ else:
                     with cc1:
                         if st.button("Send", key=f"send_{p['id']}"):
                             # Demo only — no backend call here
-                            st.success("Lead captured locally (demo). In a real app, this would POST to a backend.")
+                            st.success("Lead captured locally (demo). In a real app, this would                            st.success("Lead captured locally (demo). In a real app, this would POST to a backend.")
                     with cc2:
                         if st.button("Close contact", key=f"closec_{p['id']}"):
-                            st.session_state.show_contact[p["id                            st.session_state.show_contact[p["id"]] = False
+                            # ✅ ensure this is one clean line:
+                            st.session_state.show_contact[p["id"]] = False
 
