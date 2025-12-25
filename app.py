@@ -327,7 +327,7 @@ with cc2:
         df = pd.DataFrame(st.session_state.leads)
         st.download_button("Download leads (CSV)",
                            data=df.to_csv(index=False).encode("utf-8"),
-                           file_name="leads.csv", mime="                           file_name="leads.csv", mime="text/csv")
+                           file_name="leads.csv", mime="text/csv")
     else:
         st.button("Download leads (CSV)", disabled=True)
 
