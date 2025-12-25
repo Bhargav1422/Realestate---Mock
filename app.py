@@ -1,5 +1,5 @@
 
-# app.py — EstateVista (Streamlit prototype)
+# app.py — EstateVista (Streamlit prototype, stable copy-paste)
 
 import json
 from pathlib import Path
@@ -8,7 +8,7 @@ import streamlit as st
 # --------------------
 # Page / Theme Setup
 # --------------------
-st.set_page_config(page_title="EstateVista — Streamlit", page_icon="🏠", layout="wide")
+st.set_page_config(page_title="EstateVista", page_icon="🏠", layout="wide")
 
 CUSTOM_CSS = """
 <style>
@@ -29,12 +29,8 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 # --------------------
 if "user" not in st.session_state:
     st.session_state.user = None
-
-# Flag used to trigger rerun **outside** callbacks
 if "do_rerun" not in st.session_state:
     st.session_state.do_rerun = False
-
-# Per-card UI state maps (details/contact)
 if "show_details" not in st.session_state:
     st.session_state.show_details = {}  # {property_id: bool}
 if "show_contact" not in st.session_state:
@@ -50,7 +46,6 @@ with st.sidebar:
         st.success(f"Signed in as {st.session_state.user}")
         if st.button("Sign out"):
             st.session_state.user = None
-            # Trigger rerun safely outside callback
             st.session_state.do_rerun = True
     else:
         st.caption("Mock login — enter any name")
@@ -58,17 +53,16 @@ with st.sidebar:
         if st.button("Continue"):
             if name.strip():
                 st.session_state.user = name.strip()
-                # Trigger rerun safely outside callback
                 st.session_state.do_rerun = True
             else:
                 st.error("Please enter a name")
 
-# Perform rerun from the main body (safe place)
+# Safe rerun outside callbacks
 if st.session_state.do_rerun:
     st.session_state.do_rerun = False
     st.rerun()
 
-# Gate the app until logged in
+# Gate the app until login
 if not st.session_state.user:
     st.info("Please login from the left sidebar to continue.")
     st.stop()
@@ -81,10 +75,10 @@ try:
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
 except FileNotFoundError:
-    st.error(f"Couldn't find {DATA_PATH.name}. Make sure it sits next to app.py.")
+    st.error("Missing properties.json next to app.py.")
     st.stop()
 except json.JSONDecodeError as e:
-    st.error(f"Failed to parse properties.json: {e}")
+    st.error(f"properties.json parse error: {e}")
     st.stop()
 
 # --------------------
@@ -94,11 +88,11 @@ regions = sorted({p["region_key"] for p in data})
 
 col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
 with col1:
-    region_sel = st.selectbox("Region", options=["All"] + regions, index=0)
+    region_sel = st.selectbox("Region", ["All"] + regions, index=0)
 with col2:
-    condition_sel = st.selectbox("Condition", options=["All", "New", "Old"], index=0)
+    condition_sel = st.selectbox("Condition", ["All", "New", "Old"], index=0)
 with col3:
-    home_type_sel = st.selectbox("Home Type", options=["All", "Individual", "Apartment"], index=0)
+    home_type_sel = st.selectbox("Home Type", ["All", "Individual", "Apartment"], index=0)
 with col4:
     q = st.text_input("Search (title/address)", value="")
 
@@ -139,15 +133,16 @@ else:
             c1, c2 = st.columns(2)
             with c1:
                 if st.button("Details", key=f"d_{p['id']}"):
-                    st.session_state.show_details[p["id"]] = not st.session_state.show_details.get(p["id"], False)
+                    cur = st.session_state.show_details.get(p["id"], False)
+                    st.session_state.show_details[p["id"]] = not cur
             with c2:
                 if st.button("Contact", key=f"c_{p['id']}"):
-                    st.session_state.show_contact[p["id"]] = not st.session_state.show_contact.get(p["id"], False)
+                    cur = st.session_state.show_contact.get(p["id"], False)
+                    st.session_state.show_contact[p["id"]] = not cur
 
             # Details Section
             if st.session_state.show_details.get(p["id"]):
                 with st.expander("Details", expanded=True):
-                    # Show all fields except 'image'
                     details = {k: v for k, v in p.items() if k != "image"}
                     st.write(details)
 
@@ -157,13 +152,11 @@ else:
                     nm = st.text_input("Your name", key=f"nm_{p['id']}")
                     ph = st.text_input("Phone", key=f"ph_{p['id']}")
                     msg = st.text_area("Message", key=f"msg_{p['id']}")
-                    cc1, cc2 = st.columns(2)
+                                       cc1, cc2 = st.columns(2)
                     with cc1:
                         if st.button("Send", key=f"send_{p['id']}"):
-                            # Demo only — no backend call here
-                            st.success("Lead captured locally (demo). In a real app, this would POST to a backend.")
+                            st.success("Lead saved (demo). No backend call.")
                     with cc2:
                         if st.button("Close contact", key=f"closec_{p['id']}"):
-                            # ✅ ensure this is one clean line:
                             st.session_state.show_contact[p["id"]] = False
 
