@@ -1,19 +1,23 @@
 
-# app.py — Prasad Realty (Streamlit prototype with enhanced UI/UX)
-# Includes: mobile-friendly layout, sticky filters, favorites, toast feedback,
-# site-visit dialog, gallery, EMI calc, map pins (pydeck), quick chips, lead CSV.
+# app.py — Prasad Realty (enhanced Streamlit prototype)
+# Features: mobile-friendly layout, sticky filters, favorites, toast feedback,
+# dialog for site visits, gallery, EMI calc, map pins (pydeck), quick chips,
+# lead CSV export, duplicate-safe keys, brand logo, real Instagram link.
 
 import json
+import os
+import base64
 from pathlib import Path
 from datetime import datetime, time
 from urllib.parse import quote_plus
+
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
 
-# --------------------
+# --------------------------------------------------
 # Page / Theme
-# --------------------
+# --------------------------------------------------
 st.set_page_config(page_title="Prasad Realty", page_icon="🏠", layout="wide")
 
 CSS = """
@@ -44,6 +48,12 @@ html, body, [class*="stApp"] { background: linear-gradient(135deg, #0b1020, var(
 .button-primary {
   background: linear-gradient(135deg, var(--primary), var(--accent));
   color:#0b1220; border:0; padding:10px 14px; border-radius:10px; font-weight:600;
+}
+
+/* Logo circle */
+.brand-card .brand-logo {
+  border-radius: 50%;
+  border: 2px solid var(--accent);
 }
 
 /* Flex + filters */
@@ -79,23 +89,49 @@ img { border-radius: 12px; }
 """
 st.markdown(CSS, unsafe_allow_html=True)
 
-# --------------------
-# Branding / constants (replace with your values)
-# --------------------
+# --------------------------------------------------
+# Branding / constants — replace with your values
+# --------------------------------------------------
 PRASAD_IG_HANDLE = "prasad.realty_vizag"
-PRASAD_IG_URL = f"https://instagram.com/{PRASAD_IG_HANDLE}"
+# Use your deep link with igsh param:
+PRASAD_IG_URL = "https://www.instagram.com/prasad.realty_vizag?igsh=MWc3ZjN6dWwxNDNkZw=="
 PRASAD_PHONE = "+916309729493"
 PRASAD_WHATSAPP = "https://wa.me/916309729493"
+# Path to your uploaded logo image (place it in your project)
+PRASAD_LOGO_PATH = "assets/prasad_logo.png"
 
-# --------------------
+# --------------------------------------------------
+# Helpers
+# --------------------------------------------------
+def brand_logo_img(path: str, size: int = 64) -> str:
+    """
+    Returns a circular <img> tag with base64-embedded logo.
+    If the file is missing, returns an empty string gracefully.
+    """
+    try:
+        if not os.path.isfile(path):
+            return ""
+        with open(path, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode("utf-8")
+        return f"data:image/png;base64,{b64}"
+    except Exception:
+        return ""
+
+def toast_ok(msg: str):
+    """Toast feedback (fallback to success for older versions)."""
+    try:
+        st.toast(msg)
+    except Exception:
+        st.success(msg)
+
+# --------------------------------------------------
 # Session defaults
-# --------------------
+# --------------------------------------------------
 if "user" not in st.session_state: st.session_state.user = None
 if "rerun" not in st.session_state: st.session_state.rerun = False
 if "leads" not in st.session_state: st.session_state.leads = []
 if "favorites" not in st.session_state: st.session_state.favorites = set()
 
-# Filter session keys (used by fragments)
 def _init_filters():
     defaults = {
         "s_region": "All", "s_condition": "All", "s_type": "All",
@@ -106,31 +142,26 @@ def _init_filters():
         if k not in st.session_state: st.session_state[k] = v
 _init_filters()
 
-# --------------------
-# Utility: toast feedback (fallback to success)
-# --------------------
-def toast_ok(msg: str):
-    try:
-        st.toast(msg)
-    except Exception:
-        st.success(msg)
-
-# --------------------
+# --------------------------------------------------
 # Sidebar (brand + login)
-# --------------------
+# --------------------------------------------------
 with st.sidebar:
     st.title("Prasad Realty")
     st.caption("Visakhapatnam · Residential & Plots")
 
+    # Brand card with circular logo + Instagram link
     st.markdown(
         f"""
         <div class='brand-card'>
           <div class='flex'>
-            <div>
-              <div style='font-weight:700;'>Prasad Realty</div>
-              <div class='small'>Instagram: @{PRASAD_IG_HANDLE}</div>
+            <div style='display:flex;align-items:center;gap:10px;'>
+              {brand_logo_img(PRASAD_LOGO_PATH, size=64)}
+              <div>
+                <div style='font-weight:700;'>Prasad Realty</div>
+                <div class='small'>Instagram: @{PRASAD_IG_HANDLE}</div>
+              </div>
             </div>
-            {PRASAD_IG_URL}Instagram</a>
+            {PRASAD_IG_URL}Follow</a>
           </div>
           <div style='margin-top:6px;' class='small'>Call / WhatsApp: {PRASAD_PHONE}</div>
         </div>
@@ -159,9 +190,9 @@ if not st.session_state.user:
     st.info("Please login from the left sidebar to continue.")
     st.stop()
 
-# --------------------
+# --------------------------------------------------
 # Data
-# --------------------
+# --------------------------------------------------
 DATA_PATH = Path(__file__).parent / "properties.json"
 FALLBACK = [
   {"id":7,"title":"Independent 4BHK with garden","region_key":"Hanumanthawaka","condition":"New","home_type":"Individual",
@@ -188,15 +219,14 @@ try:
 except Exception:
     data = FALLBACK
 
-# Regions and price bounds
 regions = sorted({p["region_key"] for p in data})
 prices = [p.get("price_inr", 0) for p in data]
 pmin_data = min(prices) if prices else 0
 pmax_data = max(prices) if prices else 0
 
-# --------------------
-# Hero
-# --------------------
+# --------------------------------------------------
+# Hero + Mobile bar
+# --------------------------------------------------
 st.markdown(
     """
     <div class='hero'>
@@ -211,18 +241,18 @@ st.markdown(
     """, unsafe_allow_html=True
 )
 
-# Sticky mobile action bar
 st.markdown(
     f"""
     <div class='mobile-bar'>
-      <a href='{PRASAD_WHATSAPP}' target='_PRASAD_IG_URL}Instagram</a>
+      {PRASAD_WHATSAPP}WhatsApp</a>
+      {PRASAD_IG_URL}Instagram</a>
     </div>
     """, unsafe_allow_html=True
 )
 
-# --------------------
+# --------------------------------------------------
 # Fragments: filters + grid
-# --------------------
+# --------------------------------------------------
 @st.fragment
 def render_filters():
     # Quick chips (demo shortcuts)
@@ -233,10 +263,10 @@ def render_filters():
             toast_ok("Applied ₹50–80L budget")
     with ch2:
         if st.button("Sea-facing", key="chip_sea"):
-            toast_ok("Demo chip: apply 'sea-facing' tag (populate in properties.json)")
+            toast_ok("Demo chip: add 'sea-facing' tag in properties.json to use")
     with ch3:
         if st.button("Gated community", key="chip_gated"):
-            toast_ok("Demo chip: apply 'gated' amenity (populate in properties.json)")
+            toast_ok("Demo chip: add 'amenities': ['Gated'] in properties.json to use")
     with ch4:
         st.caption(f"Favorites: {len(st.session_state.favorites)}")
 
@@ -294,7 +324,6 @@ def _sorter_key(p):
 
 @st.dialog("Book a site visit", width="large")
 def book_visit_dialog(p):
-    # Dialog content
     st.markdown(f"**{p['title']}** · {p['region_key']}")
     visit_date = st.date_input("Date", key=f"dlg_date_{p['id']}")
     visit_time = st.time_input("Time", value=time(11,30), key=f"dlg_time_{p['id']}")
@@ -320,7 +349,7 @@ def render_grid(props):
         st.warning("No properties match your filters.")
         return
 
-    # Optional map view (if lat/lng present)
+    # Map (if lat/lng present)
     map_df = pd.DataFrame([
         {"lat": p.get("lat"), "lon": p.get("lng"), "title": p["title"], "price": p["price_inr"]}
         for p in props if p.get("lat") and p.get("lng")
@@ -338,7 +367,7 @@ def render_grid(props):
     cols = st.columns(3)  # auto-stacks on small screens
     for i, p in enumerate(props):
         with cols[i % 3]:
-            st.container()  # wrapper
+            st.container()
             st.image(p["image"], use_column_width=True)
             st.markdown(f"**{p['title']}**")
             st.markdown(f"<span class='price'>₹{p['price_inr']:,.0f}</span>", unsafe_allow_html=True)
@@ -350,6 +379,7 @@ def render_grid(props):
                 f"<span class='badge'>{p.get('area_sqft',0)} sqft</span>",
                 unsafe_allow_html=True
             )
+
             dists = p.get("distances", {})
             if dists:
                 st.write(" ".join([f"<span class='badge'>{k}: {v}</span>" for k,v in dists.items()]),
@@ -357,14 +387,14 @@ def render_grid(props):
 
             st.caption(p.get("address", ""), help="Address")
 
-            # Gallery select (simple carousel)
+            # Gallery (simple "carousel")
             pics = [p["image"]] + p.get("images", [])
             if pics:
                 sel = st.selectbox("Gallery", options=range(len(pics)),
                                    format_func=lambda idx: f"Photo {idx+1}", key=f"gal_{p['id']}")
                 st.image(pics[sel], use_column_width=True)
 
-            # CTAs (with duplicate-safe keys)
+            # CTAs (unique keys)
             b1, b2, b3, b4 = st.columns(4)
             with b1:
                 insta = p.get("insta_url", "")
@@ -412,21 +442,21 @@ def render_grid(props):
                     emi = 0 if n == 0 else loan_amt * r * ((1 + r)**n) / (((1 + r)**n) - 1)
                     st.write(f"**Estimated EMI:** ₹{emi:,.0f} / month")
 
-                    # Visit dialog
+                    # Site-visit dialog
                     if st.button("Book visit", key=f"bk_{p['id']}"):
                         book_visit_dialog(p)
 
-# Render filters, then compute, then render grid
+# Run the fragments
 render_filters()
 filtered = sorted([p for p in data if _matches(p)], key=_sorter_key)
 render_grid(filtered)
 
-# --------------------
+# --------------------------------------------------
 # Quick contact + CSV
-# --------------------
+# --------------------------------------------------
 st.markdown("---")
 st.subheader("Quick contact")
-qc1, qc2, qc3 = st.columns([2,2,3])
+qc1qc1, qc2, qc3 = st.columns([2,2,3])
 with qc1: qn = st.text_input("Your name", key="qc_name")
 with qc2: qp = st.text_input("Phone", key="qc_phone")
 with qc3: qe = st.text_input("Email", key="qc_email")
@@ -440,7 +470,7 @@ with cc1:
             "property_id": None, "title": None, "region": None,
             "name": qn.strip(), "phone": qp.strip(), "email": qe.strip(),
             "visit_date": "", "visit_time": "", "note": msg.strip(), "source": "contact_form"
-               }
+        }
         st.session_state.leads.append(lead)
         toast_ok("Message saved (demo).")
 with cc2:
