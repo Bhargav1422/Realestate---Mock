@@ -1,3 +1,11 @@
+
+#!/usr/bin/env python3
+# app.py — Prasad Realty (Streamlit Cloud–ready, hardened + validation)
+# - Clean HTML/CSS (no escapes), consistent buttons (nowrap), scrollable JSON
+# - Validation for login, contact form, and site-visit dialog (name/phone/email/message)
+# - Fallbacks for Streamlit versions (dialog/link_button), cached data loading (conditional)
+# - Robust paths and error handling; defensive UI guards
+
 import base64
 import json
 import os
@@ -198,12 +206,18 @@ def toast_ok(msg: str):
 def safe_link_button(label: str, url: str, help: Optional[str] = None, key: Optional[str] = None):
     """Use st.link_button if available, else a styled <a role="button">."""
     if hasattr(st, "link_button"):
-        st.link_button(label, url=url, help=help, key=key)
-    else:
-        html = (
-            f"{url}{label}</a>"
-        )
-        st.markdown(html, unsafe_allow_html=True)
+        # Some Streamlit versions may not accept `help` or additional kwargs on link_button.
+        try:
+            st.link_button(label, url=url, key=key)
+            return
+        except TypeError:
+            pass
+        except Exception:
+            pass
+    html = (
+        f"{url}{label}</a>"
+    )
+    st.markdown(html, unsafe_allow_html=True)
 
 
 # --------------------------------------------------
@@ -246,7 +260,7 @@ with st.sidebar:
     st.caption("Visakhapatnam · Residential & Plots")
 
     ig_link_html = (
-        f"{PRASAD_IG_URL}Follow</a>"
+        f"<a href='{PRASAD_IG_URLa>"
     )
     st.markdown(
         """
@@ -484,7 +498,6 @@ st.markdown("<div class='filters'>", unsafe_allow_html=True)
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 with c1:
     region_options = ["All"] + regions
-    # Safe index even if previous state references a now-missing region
     try:
         region_index = region_options.index(st.session_state.s_region)
     except ValueError:
@@ -503,11 +516,10 @@ with c4:
     idx = beds_opts.index(st.session_state.s_min_bed) if st.session_state.s_min_bed in beds_opts else 0
     st.session_state.s_min_bed = st.selectbox("Min bedrooms", beds_opts, index=idx)
 with c5:
-    # Clamp existing slider value to current data bounds to avoid errors
     min_v, max_v = st.session_state.s_budget
     min_v = max(pmin_data, int(min_v))
     max_v = min(pmax_data, int(max_v))
-    if min_v > max_v:  # ensure order
+    if min_v > max_v:
         min_v, max_v = pmin_data, pmax_data
     st.session_state.s_budget = st.slider(
         "Budget (₹)", min_value=pmin_data, max_value=pmax_data, value=(min_v, max_v), step=500_000
@@ -573,7 +585,6 @@ def save_visit_lead(
     if not ok_name:
         errors.append(err_name)
 
-    # At least one contact method required
     phone_clean = (phone or "").strip()
     email_clean = (email or "").strip()
     if not phone_clean and not email_clean:
@@ -588,7 +599,6 @@ def save_visit_lead(
             if not ok_em:
                 errors.append(err_em)
 
-    # Date/time must be set (Streamlit provides defaults, but validate anyway)
     if not isinstance(visit_date, date):
         errors.append("Please select a valid date.")
     if not isinstance(visit_time, time):
@@ -745,7 +755,6 @@ else:
                 )
             st.caption(p.get("address", ""))
 
-            # Gallery
             pics = [p.get("image", "")] + p.get("images", [])
             pics = [x for x in pics if x]
             if pics:
@@ -757,7 +766,6 @@ else:
                 )
                 st.image(pics[sel], use_column_width=True)
 
-            # CTAs
             b1, b2, b3, b4 = st.columns(4)
             st.markdown("<div class='property-cta'>", unsafe_allow_html=True)
             with b1:
@@ -804,7 +812,6 @@ else:
                     )
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # Details expander + EMI + Book visit
             pid = p.get("id", i)
             if st.session_state.get("show_{id}".format(id=pid), False):
                 with st.expander("Details", expanded=True):
@@ -845,7 +852,7 @@ else:
                     if st.button("Book visit", key="bk_{id}".format(id=pid)):
                         open_visit_dialog(p)
 
-            st.markdown("</div>", unsafe_allow_html=True)  # close property-card
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # --------------------------------------------------
 # Fallback visit section (if dialog API not available) — with validation
