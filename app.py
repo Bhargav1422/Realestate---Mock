@@ -1,5 +1,5 @@
 
-# app.py — Prasad Realty (Streamlit prototype, mobile-friendly)
+# app.py — Prasad Realty (Streamlit prototype, mobile-friendly, duplicate-id fix)
 
 import json
 from pathlib import Path
@@ -101,85 +101,85 @@ if "leads" not in st.session_state: st.session_state.leads = []
 # Sidebar
 # --------------------
 with st.sidebar:
-    st.title("Prasad Realty")
-    st.caption("Visakhapatnam · Residential & Plots")
+  st.title("Prasad Realty")
+  st.caption("Visakhapatnam · Residential & Plots")
 
-    st.markdown(
-        f"""
-        <div class='brand-card'>
-          <div class='flex'>
-            <div>
-              <div style='font-weight:700;'>Prasad Realty</div>
-              <div class='small'>Instagram: @{PRASAD_IG_HANDLE}</div>
-            </div>
-            {PRASAD_IG_URL}Instagram</a>
-          </div>
-          <div style='margin-top:6px;' class='small'>Call / WhatsApp: {PRASAD_PHONE}</div>
+  st.markdown(
+    f"""
+    <div class='brand-card'>
+      <div class='flex'>
+        <div>
+          <div style='font-weight:700;'>Prasad Realty</div>
+          <div class='small'>Instagram: @{PRASAD_IG_HANDLE}</div>
         </div>
-        """, unsafe_allow_html=True
-    )
+        {PRASAD_IG_URL}Instagram</a>
+      </div>
+      <div style='margin-top:6px;' class='small'>Call / WhatsApp: {PRASAD_PHONE}</div>
+    </div>
+    """, unsafe_allow_html=True
+  )
 
-    if st.session_state.user:
-        st.success(f"Signed in as {st.session_state.user}")
-        if st.button("Sign out"):
-            st.session_state.user = None
-            st.session_state.rerun = True
-    else:
-        name = st.text_input("Your name")
-        if st.button("Continue"):
-            if name.strip():
-                st.session_state.user = name.strip()
-                st.session_state.rerun = True
-            else:
-                st.error("Please enter a name")
+  if st.session_state.user:
+    st.success(f"Signed in as {st.session_state.user}")
+    if st.button("Sign out"):
+      st.session_state.user = None
+      st.session_state.rerun = True
+  else:
+    name = st.text_input("Your name")
+    if st.button("Continue"):
+      if name.strip():
+        st.session_state.user = name.strip()
+        st.session_state.rerun = True
+      else:
+        st.error("Please enter a name")
 
-    if st.session_state.rerun:
-        st.session_state.rerun = False
-        st.rerun()
+  if st.session_state.rerun:
+    st.session_state.rerun = False
+    st.rerun()
 
 if not st.session_state.user:
-    st.info("Please login from the left sidebar to continue.")
-    st.stop()
+  st.info("Please login from the left sidebar to continue.")
+  st.stop()
 
 # --------------------
 # Data
 # --------------------
 DATA_PATH = Path(__file__).parent / "properties.json"
 FALLBACK = [
-    {"id":7,"title":"Independent 4BHK with garden","region_key":"Hanumanthawaka","condition":"New","home_type":"Individual",
-     "bedrooms":4,"bathrooms":4,"area_sqft":2400,"price_inr":22500000,"address":"Colony Rd, Hanumanthawaka",
-     "image":"https://picsum.photos/seed/hanuman3/800/500","insta_url":""},
-    {"id":9,"title":"MVP 2BHK corner flat","region_key":"MVP Colony","condition":"New","home_type":"Apartment",
-     "bedrooms":2,"bathrooms":2,"area_sqft":1050,"price_inr":7800000,"address":"Sector 5, MVP Colony",
-     "image":"https://picsum.photos/seed/mvp1/800/500","insta_url":""},
-    {"id":1,"title":"2BHK near park","region_key":"Visalakshinagar","condition":"New","home_type":"Apartment",
-     "bedrooms":2,"bathrooms":2,"area_sqft":980,"price_inr":6500000,"address":"Plot 23, Visalakshinagar",
-     "image":"https://picsum.photos/seed/visalakshi1/800/500","insta_url":""},
-    {"id":4,"title":"Luxury 4BHK penthouse","region_key":"MVP Colony","condition":"New","home_type":"Apartment",
-     "bedrooms":4,"bathrooms":4,"area_sqft":2200,"price_inr":32000000,"address":"Sector 1, MVP Colony",
-     "image":"https://picsum.photos/seed/mvp4/800/500","insta_url":""},
+  {"id":7,"title":"Independent 4BHK with garden","region_key":"Hanumanthawaka","condition":"New","home_type":"Individual",
+   "bedrooms":4,"bathrooms":4,"area_sqft":2400,"price_inr":22500000,"address":"Colony Rd, Hanumanthawaka",
+   "image":"https://picsum.photos/seed/hanuman3/800/500","insta_url":""},
+  {"id":9,"title":"MVP 2BHK corner flat","region_key":"MVP Colony","condition":"New","home_type":"Apartment",
+   "bedrooms":2,"bathrooms":2,"area_sqft":1050,"price_inr":7800000,"address":"Sector 5, MVP Colony",
+   "image":"https://picsum.photos/seed/mvp1/800/500","insta_url":""},
+  {"id":1,"title":"2BHK near park","region_key":"Visalakshinagar","condition":"New","home_type":"Apartment",
+   "bedrooms":2,"bathrooms":2,"area_sqft":980,"price_inr":6500000,"address":"Plot 23, Visalakshinagar",
+   "image":"https://picsum.photos/seed/visalakshi1/800/500","insta_url":""},
+  {"id":4,"title":"Luxury 4BHK penthouse","region_key":"MVP Colony","condition":"New","home_type":"Apartment",
+   "bedrooms":4,"bathrooms":4,"area_sqft":2200,"price_inr":32000000,"address":"Sector 1, MVP Colony",
+   "image":"https://picsum.photos/seed/mvp4/800/500","insta_url":""},
 ]
 try:
-    with open(DATA_PATH, "r", encoding="utf-8") as f:
-        data = json.load(f)
+  with open(DATA_PATH, "r", encoding="utf-8") as f:
+    data = json.load(f)
 except Exception:
-    data = FALLBACK
+  data = FALLBACK
 
 # --------------------
 # Hero
 # --------------------
 st.markdown(
-    """
-    <div class='hero'>
-      <div class='flex flex-wrap'>
-        <div>
-          <div style='font-weight:800;font-size:20px;'>Find your home in Vizag</div>
-          <div class='small'>Filter by area, price, and type. Book a site visit in one click.</div>
-        </div>
-        <a href='""" + PRASAD_WHATSAPP + """' target='_blank' class='button-primary'>WhatsApp</a>
+  """
+  <div class='hero'>
+    <div class='flex flex-wrap'>
+      <div>
+        <div style='font-weight:800;font-size:20px;'>Find your home in Vizag</div>
+        <div class='small'>Filter by area, price, and type. Book a site visit in one click.</div>
       </div>
+      <a href='""" + PRASAD_WHATSAPP + """' target='_blank' class='button-primary'>WhatsApp</a>
     </div>
-    """, unsafe_allow_html=True
+  </div>
+  """, unsafe_allow_html=True
 )
 
 # --------------------
@@ -191,47 +191,47 @@ pmin = min(prices) if prices else 0
 pmax = max(prices) if prices else 0
 
 with st.container():
-    st.markdown("<div class='filters'>", unsafe_allow_html=True)
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
-    with c1:
-        region_sel = st.selectbox("Region", ["All"] + regions, index=0)
-    with c2:
-        condition_sel = st.selectbox("Condition", ["All", "New", "Old"], index=0)
-    with c3:
-        home_type_sel = st.selectbox("Type", ["All", "Individual", "Apartment"], index=0)
-    with c4:
-        min_bed = st.selectbox("Min bedrooms", [0,1,2,3,4,5], index=0)
-    with c5:
-        price_range = st.slider("Budget (₹)", min_value=int(pmin), max_value=int(pmax or 10_000_000),
-                                value=(int(pmin), int(pmax or 10_000_000)), step=500_000)
-    with c6:
-        sort_by = st.selectbox("Sort", ["Newest", "Price ↑", "Price ↓", "Area ↑", "Area ↓"], index=0)
-    st.markdown("</div>", unsafe_allow_html=True)
+  st.markdown("<div class='filters'>", unsafe_allow_html=True)
+  c1, c2, c3, c4, c5, c6 = st.columns(6)
+  with c1:
+    region_sel = st.selectbox("Region", ["All"] + regions, index=0)
+  with c2:
+    condition_sel = st.selectbox("Condition", ["All", "New", "Old"], index=0)
+  with c3:
+    home_type_sel = st.selectbox("Type", ["All", "Individual", "Apartment"], index=0)
+  with c4:
+    min_bed = st.selectbox("Min bedrooms", [0,1,2,3,4,5], index=0)
+  with c5:
+    price_range = st.slider("Budget (₹)", min_value=int(pmin), max_value=int(pmax or 10_000_000),
+                            value=(int(pmin), int(pmax or 10_000_000)), step=500_000)
+  with c6:
+    sort_by = st.selectbox("Sort", ["Newest", "Price ↑", "Price ↓", "Area ↑", "Area ↓"], index=0)
+  st.markdown("</div>", unsafe_allow_html=True)
 
 with st.container():
-    st.markdown("<div class='search-wrap'>", unsafe_allow_html=True)
-    search_q = st.text_input("Search (title/address)")
-    st.markdown("</div>", unsafe_allow_html=True)
+  st.markdown("<div class='search-wrap'>", unsafe_allow_html=True)
+  search_q = st.text_input("Search (title/address)")
+  st.markdown("</div>", unsafe_allow_html=True)
 
 # --------------------
 # Filter logic + sort
 # --------------------
 def matches(p):
-    if region_sel != "All" and p["region_key"] != region_sel: return False
-    if condition_sel != "All" and p["condition"] != condition_sel: return False
-    if home_type_sel != "All" and p["home_type"] != home_type_sel: return False
-    if min_bed and p.get("bedrooms", 0) < min_bed: return False
-    if not (price_range[0] <= p.get("price_inr", 0) <= price_range[1]): return False
-    qlc = (search_q or "").lower()
-    if qlc and qlc not in (p.get("title","") + " " + p.get("address","")).lower(): return False
-    return True
+  if region_sel != "All" and p["region_key"] != region_sel: return False
+  if condition_sel != "All" and p["condition"] != condition_sel: return False
+  if home_type_sel != "All" and p["home_type"] != home_type_sel: return False
+  if min_bed and p.get("bedrooms", 0) < min_bed: return False
+  if not (price_range[0] <= p.get("price_inr", 0) <= price_range[1]): return False
+  qlc = (search_q or "").lower()
+  if qlc and qlc not in (p.get("title","") + " " + p.get("address","")).lower(): return False
+  return True
 
 def sorter_key(p):
-    if sort_by == "Price ↑": return p.get("price_inr", 0)
-    if sort_by == "Price ↓": return -p.get("price_inr", 0)
-    if sort_by == "Area ↑": return p.get("area_sqft", 0)
-    if sort_by == "Area ↓": return -p.get("area_sqft", 0)
-    return -p.get("id", 0)  # Newest
+  if sort_by == "Price ↑": return p.get("price_inr", 0)
+  if sort_by == "Price ↓": return -p.get("price_inr", 0)
+  if sort_by == "Area ↑": return p.get("area_sqft", 0)
+  if sort_by == "Area ↓": return -p.get("area_sqft", 0)
+  return -p.get("id", 0)  # Newest
 
 filtered = sorted([p for p in data if matches(p)], key=sorter_key)
 
@@ -239,66 +239,68 @@ filtered = sorted([p for p in data if matches(p)], key=sorter_key)
 # Grid + actions
 # --------------------
 if not filtered:
-    st.warning("No properties match your filters.")
+  st.warning("No properties match your filters.")
 else:
-    cols = st.columns(3)  # stacks on small screens automatically
-    for i, p in enumerate(filtered):
-        with cols[i % 3]:
-            st.image(p["image"], use_column_width=True)
-            st.markdown(f"**{p['title']}**")
-            st.markdown(f"<span class='price'>₹{p['price_inr']:,.0f}</span>", unsafe_allow_html=True)
-            st.markdown(
-                f"<span class='badge'>{p['region_key']}</span>"
-                f"<span class='badge'>{p['condition']}</span>"
-                f"<span class='badge'>{p['home_type']}</span>"
-                f"<span class='badge'>{p.get('bedrooms',0)} BR</span>"
-                f"<span class='badge'>{p.get('area_sqft',0)} sqft</span>",
-                unsafe_allow_html=True
+  cols = st.columns(3)  # stacks on small screens automatically
+  for i, p in enumerate(filtered):
+    with cols[i % 3]:
+      st.image(p["image"], use_column_width=True)
+      st.markdown(f"**{p['title']}**")
+      st.markdown(f"<span class='price'>₹{p['price_inr']:,.0f}</span>", unsafe_allow_html=True)
+      st.markdown(
+        f"<span class='badge'>{p['region_key']}</span>"
+        f"<span class='badge'>{p['condition']}</span>"
+        f"<span class='badge'>{p['home_type']}</span>"
+        f"<span class='badge'>{p.get('bedrooms',0)} BR</span>"
+        f"<span class='badge'>{p.get('area_sqft',0)} sqft</span>",
+        unsafe_allow_html=True
+      )
+      st.caption(p.get("address", ""), help="Address")
+
+      b1, b2, b3 = st.columns(3)
+      with b1:
+        insta = p.get("insta_url", "")
+        if insta:
+          # give unique key so multiple link_buttons don't collide (safe even if not required)
+          st.link_button("Instagram", url=insta, help="View post", type="secondary", use_container_width=False)
+        else:
+          # 🔧 FIX: unique key per item to avoid StreamlitDuplicateElementId
+          st.button("Instagram", key=f"insta_disabled_{p['id']}", disabled=True)
+      with b2:
+        txt = quote_plus(f"Hi Prasad Realty, I'm interested in '{p['title']}' in {p['region_key']}.")
+        st.link_button("WhatsApp", url=f"{PRASAD_WHATSAPP}?text={txt}")
+      with b3:
+        if st.button("Details", key=f"d_{p['id']}"):
+          st.session_state[f"show_{p['id']}"] = not st.session_state.get(f"show_{p['id']}", False)
+
+      if st.session_state.get(f"show_{p['id']}", False):
+        with st.expander("Details", expanded=True):
+          st.write({k: v for k, v in p.items() if k != "image"})
+          st.markdown("**Book a site visit**")
+          visit_date = st.date_input("Date", key=f"date_{p['id']}")
+          visit_time = st.time_input("Time", value=time(11,30), key=f"time_{p['id']}")
+          name = st.text_input("Your name", key=f"nm_{p['id']}")
+          phone = st.text_input("Phone", key=f"ph_{p['id']}")
+          email = st.text_input("Email", key=f"em_{p['id']}")
+          note = st.text_area("Note", key=f"nt_{p['id']}")
+
+          cta1, cta2 = st.columns(2)
+          with cta1:
+            if st.button("Request visit", key=f"rq_{p['id']}"):
+              lead = {
+                "ts": datetime.now().isoformat(timespec="seconds"),
+                "property_id": p["id"], "title": p["title"], "region": p["region_key"],
+                "name": name.strip(), "phone": phone.strip(), "email": email.strip(),
+                "visit_date": str(visit_date), "visit_time": str(visit_time),
+                "note": note.strip(), "source": "site_visit"
+              }
+              st.session_state.leads.append(lead)
+              st.success("Visit requested (demo).")
+          with cta2:
+            msg = quote_plus(
+              f"Visit request for '{p['title']}' on {visit_date} at {visit_time}. Name: {name}, Phone: {phone}"
             )
-            st.caption(p.get("address", ""), help="Address")
-
-            b1, b2, b3 = st.columns(3)
-            with b1:
-                insta = p.get("insta_url", "")
-                if insta:
-                    st.link_button("Instagram", url=insta)
-                else:
-                    st.button("Instagram", disabled=True)
-            with b2:
-                txt = quote_plus(f"Hi Prasad Realty, I'm interested in '{p['title']}' in {p['region_key']}.")
-                st.link_button("WhatsApp", url=f"{PRASAD_WHATSAPP}?text={txt}")
-            with b3:
-                if st.button("Details", key=f"d_{p['id']}"):
-                    st.session_state[f"show_{p['id']}"] = not st.session_state.get(f"show_{p['id']}", False)
-
-            if st.session_state.get(f"show_{p['id']}", False):
-                with st.expander("Details", expanded=True):
-                    st.write({k: v for k, v in p.items() if k != "image"})
-                    st.markdown("**Book a site visit**")
-                    visit_date = st.date_input("Date", key=f"date_{p['id']}")
-                    visit_time = st.time_input("Time", value=time(11,30), key=f"time_{p['id']}")
-                    name = st.text_input("Your name", key=f"nm_{p['id']}")
-                    phone = st.text_input("Phone", key=f"ph_{p['id']}")
-                    email = st.text_input("Email", key=f"em_{p['id']}")
-                    note = st.text_area("Note", key=f"nt_{p['id']}")
-
-                    cta1, cta2 = st.columns(2)
-                    with cta1:
-                        if st.button("Request visit", key=f"rq_{p['id']}"):
-                            lead = {
-                                "ts": datetime.now().isoformat(timespec="seconds"),
-                                "property_id": p["id"], "title": p["title"], "region": p["region_key"],
-                                "name": name.strip(), "phone": phone.strip(), "email": email.strip(),
-                                "visit_date": str(visit_date), "visit_time": str(visit_time),
-                                "note": note.strip(), "source": "site_visit"
-                            }
-                            st.session_state.leads.append(lead)
-                            st.success("Visit requested (demo).")
-                    with cta2:
-                        msg = quote_plus(
-                            f"Visit request for '{p['title']}' on {visit_date} at {visit_time}. Name: {name}, Phone: {phone}"
-                        )
-                        st.link_button("WhatsApp confirm", url=f"{PRASAD_WHATSAPP}?text={msg}")
+            st.link_button("WhatsApp confirm", url=f"{PRASAD_WHATSAPP}?text={msg}")
 
 # --------------------
 # Quick contact + CSV
@@ -313,21 +315,22 @@ msg = st.text_area("Message", key="qc_msg")
 
 cc1, cc2 = st.columns(2)
 with cc1:
-    if st.button("Send message"):
-        lead = {
-            "ts": datetime.now().isoformat(timespec="seconds"),
-            "property_id": None, "title": None, "region": None,
-            "name": qn.strip(), "phone": qp.strip(), "email": qe.strip(),
-            "visit_date": "", "visit_time": "", "note": msg.strip(), "source": "contact_form"
-        }
-        st.session_state.leads.append(lead)
-        st.success("Message saved (demo).")
+  if st.button("Send message"):
+    lead = {
+      "ts": datetime.now().isoformat(timespec="seconds"),
+      "property_id": None, "title": None, "region": None,
+      "name": qn.strip(), "phone": qp.strip(), "email": qe.strip(),
+      "visit_date": "", "visit_time": "", "note": msg.strip(), "source": "contact_form"
+    }
+    st.session_state.leads.append(lead)
+    st.success("Message saved (demo).")
 with cc2:
-    if st.session_state.leads:
-        df = pd.DataFrame(st.session_state.leads)
-        st.download_button("Download leads (CSV)",
-                           data=df.to_csv(index=False).encode("utf-8"),
-                           file_name="leads.csv", mime="text/csv")
-    else:
-        st.button("Download leads (CSV)", disabled=True)
+  if st.session_state.leads:
+    df = pd.DataFrame(st.session_state.leads)
+    st.download_button("Download leads (CSV)",
+                       data=df.to_csv(index=False).encode("utf-8"),
+                       file_name="leads.csv", mime="text/csv")
+  else:
+    st.button("Download leads (CSV)", disabled=True)
 
+st.caption("Prasad Realty
