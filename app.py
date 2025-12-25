@@ -324,4 +324,4 @@ with cc2:
     else:
         st.button("Download leads (CSV)", disabled=True)
 
-st.caption("Prototype — Stream
+st.caption("Prototype — Stream.")
