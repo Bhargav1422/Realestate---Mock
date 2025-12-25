@@ -94,16 +94,14 @@ img { border-radius: 12px; }
 .mobile-bar a { text-decoration: none; }
 
 /* --- Button text wrapping fixes --- */
-/* Streamlit core buttons and download buttons */
 .stButton > button, .stDownloadButton > button {
-  white-space: nowrap;             /* prevent "Inst\na\ngra" / "Wha\ntsAp" */
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 8px 12px;
   border-radius: 10px;
 }
-/* Link buttons (st.link_button renders <a role="button">) */
 a[role="button"] {
   white-space: nowrap;
   display: inline-flex;
@@ -112,11 +110,7 @@ a[role="button"] {
   padding: 8px 12px;
   border-radius: 10px;
 }
-
-/* Optional: slightly smaller font for card CTA buttons to fit 4 columns */
-.property-cta button, .property-cta a[role="button"] {
-  font-size: 0.9rem;
-}
+.property-cta button, .property-cta a[role="button"] { font-size: 0.9rem; }
 
 /* Responsive filters */
 @media (max-width: 900px) { .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -158,7 +152,10 @@ def brand_logo_img(path: str, size: int = 64) -> str:
             return ""
         with open(path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode("utf-8")
-        return "<img class='brand-logo' src='data:image/png;base64,{b64}' width='{w}' height='{h}' alt='PrasadException:
+        # Use double-quotes throughout to avoid quoting issues
+        return '<img class="brand-logo" src="data:image/png;base64,{b64}" w=size, h=size
+        )
+    except Exception:
         return ""
 
 def toast_ok(msg: str):
@@ -193,7 +190,7 @@ with st.sidebar:
     st.caption("Visakhapatnam · Residential & Plots")
 
     # Brand card with circular logo + Instagram link
-    ig_link = "<a href='{url}' targett(url=PRASAD_IG_URL)
+    ig_link = "<a href='{url}' target='_blank'SAD_IG_URL)
     st.markdown(
         """
         <div class='brand-card'>
@@ -275,8 +272,8 @@ pmax_data = max(prices) if prices else 10_000_000
 # --------------------------------------------------
 # Hero + Mobile CTA bar
 # --------------------------------------------------
-wa_link = "<a href='{url}' target='_blank'RASAD_WHATSAPP)
-ig_link_small = "<a href='{url}' target='_blank' class_IG_URL)
+wa_link = "<a href='{url}' target='_blank' class='ATSAPP)
+ig_link_small = "<a hrefstagram</a>".format(url=PRASAD_IG_URL)
 
 st.markdown(
     """
@@ -436,7 +433,6 @@ else:
     cols = st.columns(3)  # stacks automatically on narrow screens
     for i, p in enumerate(filtered):
         with cols[i % 3]:
-            # Wrap the card for hover effect
             st.markdown("<div class='property-card'>", unsafe_allow_html=True)
 
             st.image(p["image"], use_column_width=True)
@@ -481,7 +477,6 @@ else:
 
             # CTAs (unique keys to avoid duplicate element IDs)
             b1, b2, b3, b4 = st.columns(4)
-            # Add a class hook so our button font-size tweak applies
             st.markdown("<div class='property-cta'>", unsafe_allow_html=True)
             with b1:
                 insta = p.get("insta_url", "")
@@ -566,7 +561,7 @@ with cc1:
         }
         st.session_state.leads.append(lead)
         toast_ok("Message saved (demo).")
-with cc2with cc2:
+with cc2:
     if st.session_state.leads:
         df = pd.DataFrame(st.session_state.leads)
         st.download_button(
@@ -575,5 +570,5 @@ with cc2with cc2:
             file_name="leads.csv", mime="text/csv"
         )
     else:
-        st.button("Download leads (CSV)", key="dl_disabled", disabled=True)
+        st.button        st.button("Download leads (CSV)", key="dl_disabled", disabled=True)
 
