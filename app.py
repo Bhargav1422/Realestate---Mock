@@ -37,10 +37,9 @@ html, body, [class*="stApp"] {
 .block-container { padding-top: 0.8rem; }
 
 /* Cards */
-.card, .hero, .brand-card {
+.card, .brand-card {
   border-radius: 14px; background: rgba(17,24,39,0.72); border: 1px solid var(--border);
 }
-.hero { padding: 14px 16px; margin-bottom: 12px; }
 .brand-card { padding: 12px; }
 
 /* Hover affordance on property cards */
@@ -77,41 +76,6 @@ html, body, [class*="stApp"] {
 
 .search-wrap { padding: 8px 16px 0 16px; }
 img { border-radius: 12px; }
-
-/* Mobile sticky action bar — visible only on phones */
-.mobile-bar {
-  position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
-  display: none; gap: 8px; padding: 8px 10px; border-radius: 999px;
-  background: rgba(17,24,39,0.85); border: 1px solid var(--border); z-index: 10;
-}
-.mobile-bar a { text-decoration: none; }
-
-/* --- Button text wrapping fixes --- */
-.stButton > button, .stDownloadButton > button {
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  border-radius: 10px;
-}
-a[role="button"] {
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  border-radius: 10px;
-}
-.property-cta button, .property-cta a[role="button"] { font-size: 0.9rem; }
-
-/* Responsive filters */
-@media (max-width: 900px) { .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 600px) {
-  .filters { grid-template-columns: 1fr; }
-  .hero { padding: 12px; }
-  .mobile-bar { display: flex; }
-}
 
 /* Scrollable JSON box for Details to avoid layout blowouts */
 .json-box {
@@ -189,14 +153,8 @@ def brand_logo_img(path: str, size: int = 64) -> str:
         with open(path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode("utf-8")
         return (
-            f"data:image/png;base64,{b64}"
-        )
-    except Exception:
-        return ""
-
-
-def toast_ok(msg: str):
-    """Toast feedback, fallback to success if toast not available."""
+            f"<img class='brand-logo' src='data:image/png;base64,{b64}' "
+            f"width='{size}' height='{size}' alt='Prasadt feedback, fallback to success if toast not available."""
     try:
         st.toast(msg)
     except Exception:
@@ -206,7 +164,6 @@ def toast_ok(msg: str):
 def safe_link_button(label: str, url: str, help: Optional[str] = None, key: Optional[str] = None):
     """Use st.link_button if available, else a styled <a role="button">."""
     if hasattr(st, "link_button"):
-        # Some Streamlit versions may not accept `help` or additional kwargs on link_button.
         try:
             st.link_button(label, url=url, key=key)
             return
@@ -215,12 +172,8 @@ def safe_link_button(label: str, url: str, help: Optional[str] = None, key: Opti
         except Exception:
             pass
     html = (
-        f"{url}{label}</a>"
-    )
-    st.markdown(html, unsafe_allow_html=True)
-
-
-# --------------------------------------------------
+        f"<a role='button' class='button-primary' href='{url}' target='_blank' "
+        f"-------------------------------------------
 # Session defaults
 # --------------------------------------------------
 if "user" not in st.session_state:
@@ -260,10 +213,7 @@ with st.sidebar:
     st.caption("Visakhapatnam · Residential & Plots")
 
     ig_link_html = (
-        f"<a href='{PRASAD_IG_URLa>"
-    )
-    st.markdown(
-        """
+        f"<a href='{PRASAD_IG_URL}' target='_blank' rel='noopener'  """
         <div class='brand-card'>
           <div class='flex'>
             <div style='display:flex;align-items:center;gap:10px;'>
@@ -441,41 +391,6 @@ regions = sorted({p.get("region_key", "") for p in data if p.get("region_key")})
 prices = [p.get("price_inr", 0) for p in data]
 pmin_data = int(min(prices) if prices else 0)
 pmax_data = int(max(prices) if prices else 10_000_000)
-
-# --------------------------------------------------
-# Hero + Mobile CTA bar
-# --------------------------------------------------
-wa_link_html = (
-    f"{PRASAD_WHATSAPP}WhatsApp</a>"
-)
-ig_link_html_small = (
-    f"{PRASAD_IG_URL}Instagram</a>"
-)
-
-st.markdown(
-    """
-    <div class='hero'>
-      <div class='flex flex-wrap'>
-        <div>
-          <div style='font-weight:800;font-size:20px;'>Find your home in Vizag</div>
-          <div class='small'>Filter by area, price, and type. Book a site visit in one click.</div>
-        </div>
-        {wa_link}
-      </div>
-    </div>
-    """.format(wa_link=wa_link_html),
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    """
-    <div class='mobile-bar'>
-      {wa_link}
-      {ig_link}
-    </div>
-    """.format(wa_link=wa_link_html, ig_link=ig_link_html_small),
-    unsafe_allow_html=True,
-)
 
 # --------------------------------------------------
 # Filters UI (sticky) + search + chips
@@ -674,7 +589,7 @@ def open_visit_dialog(p: Dict):
 
 
 # --------------------------------------------------
-# Listings + Map
+# Listings + Map (Hero removed per request; buttons per property)
 # --------------------------------------------------
 st.markdown("## Listings")
 
@@ -774,7 +689,6 @@ else:
                     safe_link_button(
                         "Instagram",
                         url=insta,
-                        help="View post",
                         key="insta_{id}".format(id=p.get("id", i)),
                     )
                 else:
