@@ -155,7 +155,7 @@ else:
                     c1, c2 = st.columns(2)
                     with c1:
                         if st.button("Send", key=f"send_{p['id']}"):
-                            st.success("Lead saved (demo                            st.success("Lead saved (demo). No backend call.")
+                            st.success("Lead saved (demo). No backend call.")
                     with c2:
                         if st.button("Close contact", key=f"closec_{p['id']}"):
                             st.session_state.show_contact[p["id"]] = False
