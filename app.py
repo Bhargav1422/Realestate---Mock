@@ -1,5 +1,5 @@
 
-# app.py — Prasad Realty (Streamlit prototype, simplified and alignment-fixed)
+# app.py — Prasad Realty (Streamlit prototype, alignment-fixed + CSS fixes)
 # Features:
 # - Prasad Realty branding (Instagram deep link + circular logo)
 # - Mobile-friendly layout and sticky filter bar
@@ -8,7 +8,7 @@
 # - Map pins (pydeck) if properties have lat/lng
 # - Quick chips (demo shortcuts), lead CSV export
 # - Duplicate-safe widget keys
-# - No fragile f-strings in HTML; uses .format for all HTML blocks
+# - Robust HTML (no escaped tags), button text nowrap, scrollable details JSON
 
 import json
 import os
@@ -93,12 +93,47 @@ img { border-radius: 12px; }
 }
 .mobile-bar a { text-decoration: none; }
 
+/* --- Button text wrapping fixes --- */
+/* Streamlit core buttons and download buttons */
+.stButton > button, .stDownloadButton > button {
+  white-space: nowrap;             /* prevent "Inst\na\ngra" / "Wha\ntsAp" */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+/* Link buttons (st.link_button renders <a role="button">) */
+a[role="button"] {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+/* Optional: slightly smaller font for card CTA buttons to fit 4 columns */
+.property-cta button, .property-cta a[role="button"] {
+  font-size: 0.9rem;
+}
+
 /* Responsive filters */
 @media (max-width: 900px) { .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) {
   .filters { grid-template-columns: 1fr; }
   .hero { padding: 12px; }
   .mobile-bar { display: flex; }
+}
+
+/* Scrollable JSON box for Details to avoid layout blowouts */
+.json-box {
+  max-height: 340px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(17,24,39,0.55);
 }
 </style>
 """
@@ -111,7 +146,7 @@ PRASAD_IG_HANDLE = "prasad.realty_vizag"
 PRASAD_IG_URL = "https://www.instagram.com/prasad.realty_vizag?igsh=MWc3ZjN6dWwxNDNkZw=="
 PRASAD_PHONE = "+916309729493"
 PRASAD_WHATSAPP = "https://wa.me/916309729493"
-PRASAD_LOGO_PATH = "prasad_logo.png"  # put your logo PNG here
+PRASAD_LOGO_PATH = "assets/prasad_logo.png"  # put your logo PNG here
 
 # --------------------------------------------------
 # Helpers
@@ -123,7 +158,7 @@ def brand_logo_img(path: str, size: int = 64) -> str:
             return ""
         with open(path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode("utf-8")
-        return "<img class='brand-logo' src='data:image/png;base64,{b64}' width='{w}' height='{h}' alt except Exception:
+        return "<img class='brand-logo' src='data:image/png;base64,{b64}' width='{w}' height='{h}' alt='PrasadException:
         return ""
 
 def toast_ok(msg: str):
@@ -158,7 +193,7 @@ with st.sidebar:
     st.caption("Visakhapatnam · Residential & Plots")
 
     # Brand card with circular logo + Instagram link
-    ig_link = "<a href='{urla>".format(url=PRASAD_IG_URL)
+    ig_link = "<a href='{url}' targett(url=PRASAD_IG_URL)
     st.markdown(
         """
         <div class='brand-card'>
@@ -241,7 +276,7 @@ pmax_data = max(prices) if prices else 10_000_000
 # Hero + Mobile CTA bar
 # --------------------------------------------------
 wa_link = "<a href='{url}' target='_blank'RASAD_WHATSAPP)
-ig_link_small = "{url}Instagram</a>".format(url=PRASAD_IG_URL)
+ig_link_small = "<a href='{url}' target='_blank' class_IG_URL)
 
 st.markdown(
     """
@@ -290,3 +325,255 @@ with ch4:
 st.markdown("<div class='filters'>", unsafe_allow_html=True)
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 with c1:
+    st.session_state.s_region = st.selectbox(
+        "Region", ["All"] + regions,
+        index=(["All"] + regions).index(st.session_state.s_region)
+    )
+with c2:
+    st.session_state.s_condition = st.selectbox(
+        "Condition", ["All", "New", "Old"],
+        index=["All", "New", "Old"].index(st.session_state.s_condition)
+    )
+with c3:
+    st.session_state.s_type = st.selectbox(
+        "Type", ["All", "Individual", "Apartment"],
+        index=["All", "Individual", "Apartment"].index(st.session_state.s_type)
+    )
+with c4:
+    beds_opts = [0,1,2,3,4,5]
+    idx = beds_opts.index(st.session_state.s_min_bed) if st.session_state.s_min_bed in beds_opts else 0
+    st.session_state.s_min_bed = st.selectbox("Min bedrooms", beds_opts, index=idx)
+with c5:
+    # Budget slider honors session state (chips may set it)
+    min_v, max_v = st.session_state.s_budget
+    st.session_state.s_budget = st.slider(
+        "Budget (₹)",
+        min_value=int(pmin_data),
+        max_value=int(pmax_data),
+        value=(int(min_v), int(max_v)),
+        step=500_000
+    )
+with c6:
+    sort_opts = ["Newest", "Price ↑", "Price ↓", "Area ↑", "Area ↓"]
+    st.session_state.s_sort = st.selectbox("Sort", sort_opts, index=sort_opts.index(st.session_state.s_sort))
+st.markdown("</div>", unsafe_allow_html=True)
+
+# Search
+st.markdown("<div class='search-wrap'>", unsafe_allow_html=True)
+st.session_state.s_search = st.text_input("Search (title/address)", value=st.session_state.s_search)
+st.markdown("</div>", unsafe_allow_html=True)
+
+# --------------------------------------------------
+# Filter + sort functions
+# --------------------------------------------------
+def matches(p):
+    s = st.session_state
+    if s.s_region != "All" and p["region_key"] != s.s_region: return False
+    if s.s_condition != "All" and p["condition"] != s.s_condition: return False
+    if s.s_type != "All" and p["home_type"] != s.s_type: return False
+    if s.s_min_bed and p.get("bedrooms", 0) < s.s_min_bed: return False
+    bmin, bmax = s.s_budget
+    if not (bmin <= p.get("price_inr", 0) <= bmax): return False
+    qlc = (s.s_search or "").lower()
+    if qlc and qlc not in (p.get("title","") + " " + p.get("address","")).lower(): return False
+    return True
+
+def sorter_key(p):
+    s = st.session_state
+    if s.s_sort == "Price ↑": return p.get("price_inr", 0)
+    if s.s_sort == "Price ↓": return -p.get("price_inr", 0)
+    if s.s_sort == "Area ↑": return p.get("area_sqft", 0)
+    if s.s_sort == "Area ↓": return -p.get("area_sqft", 0)
+    return -p.get("id", 0)  # Newest
+
+filtered = sorted([p for p in data if matches(p)], key=sorter_key)
+
+# --------------------------------------------------
+# Dialog: Book a site visit
+# --------------------------------------------------
+@st.dialog("Book a site visit", width="large")
+def book_visit_dialog(p):
+    st.markdown("**{t}** · {r}".format(t=p['title'], r=p['region_key']))
+    visit_date = st.date_input("Date", key="dlg_date_{id}".format(id=p["id"]))
+    visit_time = st.time_input("Time", value=time(11,30), key="dlg_time_{id}".format(id=p["id"]))
+    name = st.text_input("Your name", key="dlg_nm_{id}".format(id=p["id"]))
+    phone = st.text_input("Phone", key="dlg_ph_{id}".format(id=p["id"]))
+    email = st.text_input("Email", key="dlg_em_{id}".format(id=p["id"]))
+    note = st.text_area("Note", key="dlg_nt_{id}".format(id=p["id"]))
+    if st.button("Request visit", key="dlg_req_{id}".format(id=p["id"])):
+        lead = {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "property_id": p["id"], "title": p["title"], "region": p["region_key"],
+            "name": name.strip(), "phone": phone.strip(), "email": email.strip(),
+            "visit_date": str(visit_date), "visit_time": str(visit_time),
+            "note": note.strip(), "source": "site_visit"
+        }
+        st.session_state.leads.append(lead)
+        toast_ok("Visit requested (demo).")
+        st.rerun()
+
+# --------------------------------------------------
+# Grid + actions
+# --------------------------------------------------
+if not filtered:
+    st.warning("No properties match your filters.")
+else:
+    # Optional map view if lat/lng are present
+    map_df = pd.DataFrame([
+        {"lat": p.get("lat"), "lon": p.get("lng"), "title": p["title"], "price": p["price_inr"]}
+        for p in filtered if p.get("lat") and p.get("lng")
+    ])
+    if not map_df.empty:
+        st.markdown("### Map view")
+        layer = pdk.Layer(
+            "ScatterplotLayer", data=map_df, get_position='[lon, lat]',
+            get_fill_color='[34, 211, 238, 160]', get_radius=60, pickable=True
+        )
+        vs = pdk.ViewState(latitude=float(map_df.lat.mean()), longitude=float(map_df.lon.mean()), zoom=12)
+        st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=vs,
+                                 tooltip={"text": "{title} — ₹{price}"}))
+
+    cols = st.columns(3)  # stacks automatically on narrow screens
+    for i, p in enumerate(filtered):
+        with cols[i % 3]:
+            # Wrap the card for hover effect
+            st.markdown("<div class='property-card'>", unsafe_allow_html=True)
+
+            st.image(p["image"], use_column_width=True)
+            st.markdown("**{t}**".format(t=p['title']))
+
+            st.markdown(
+                "<span class='price'>₹{n:,.0f}</span>".format(n=p['price_inr']),
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                "<span class='badge'>{rk}</span><span class='badge'>{c}</span>"
+                "<span class='badge'>{ht}</span><span class='badge'>{br} BR</span>"
+                "<span class='badge'>{sf} sqft</span>".format(
+                    rk=p['region_key'], c=p['condition'], ht=p['home_type'],
+                    br=p.get('bedrooms',0), sf=p.get('area_sqft',0)
+                ),
+                unsafe_allow_html=True
+            )
+
+            dists = p.get("distances", {})
+            if dists:
+                st.markdown(
+                    " ".join([
+                        "<span class='badge'>{k}: {v}</span>".format(k=k, v=v)
+                        for k, v in dists.items()
+                    ]),
+                    unsafe_allow_html=True
+                )
+
+            st.caption(p.get("address", ""), help="Address")
+
+            # Gallery (simple select "carousel")
+            pics = [p["image"]] + p.get("images", [])
+            if pics:
+                sel = st.selectbox(
+                    "Gallery", options=range(len(pics)),
+                    format_func=lambda idx: "Photo {n}".format(n=idx+1),
+                    key="gal_{id}".format(id=p['id'])
+                )
+                st.image(pics[sel], use_column_width=True)
+
+            # CTAs (unique keys to avoid duplicate element IDs)
+            b1, b2, b3, b4 = st.columns(4)
+            # Add a class hook so our button font-size tweak applies
+            st.markdown("<div class='property-cta'>", unsafe_allow_html=True)
+            with b1:
+                insta = p.get("insta_url", "")
+                if insta:
+                    st.link_button("Instagram", url=insta, help="View post")
+                else:
+                    st.button("Instagram", key="insta_disabled_{id}".format(id=p['id']), disabled=True)
+            with b2:
+                txt = quote_plus("Hi Prasad Realty, I'm interested in '{t}' in {r}.".format(t=p['title'], r=p['region_key']))
+                utm = "utm_source=streamlit&utm_medium=cta&utm_campaign=prasad_demo"
+                st.link_button("WhatsApp", url="{wa}?text={txt}&{utm}".format(wa=PRASAD_WHATSAPP, txt=txt, utm=utm))
+            with b3:
+                fav_key = "fav_{id}".format(id=p['id'])
+                is_fav = p['id'] in st.session_state.favorites
+                if st.button(("💙 Unfavorite" if is_fav else "❤️ Favorite"), key=fav_key):
+                    if is_fav:
+                        st.session_state.favorites.remove(p['id'])
+                        toast_ok("Removed from favorites")
+                    else:
+                        st.session_state.favorites.add(p['id'])
+                        toast_ok("Added to favorites")
+            with b4:
+                if st.button("Details", key="d_{id}".format(id=p['id'])):
+                    st.session_state["show_{id}".format(id=p['id'])] = not st.session_state.get("show_{id}".format(id=p['id']), False)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            # Details expander (use st.json + scrollable wrapper)
+            if st.session_state.get("show_{id}".format(id=p['id']), False):
+                with st.expander("Details", expanded=True):
+                    st.markdown("<div class='json-box'>", unsafe_allow_html=True)
+                    st.json({k: v for k, v in p.items() if k != "image"})
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+                    # EMI calculator
+                    st.markdown("**EMI Calculator**")
+                    emi1, emi2, emi3 = st.columns(3)
+                    with emi1:
+                        loan_amt = st.number_input(
+                            "Loan amount (₹)", value=float(p["price_inr"]),
+                            min_value=0.0, step=100000.0, key="loan_{id}".format(id=p['id'])
+                        )
+                    with emi2:
+                        rate = st.number_input(
+                            "Interest (% p.a.)", value=8.5, min_value=0.0, step=0.1,
+                            key="rate_{id}".format(id=p['id'])
+                        )
+                    with emi3:
+                        years = st.number_input(
+                            "Tenure (years)", value=20, min_value=1, step=1,
+                            key="years_{id}".format(id=p['id'])
+                        )
+                    r = (rate / 100.0) / 12.0
+                    n = int(years * 12)
+                    emi = 0 if n == 0 else loan_amt * r * ((1 + r)**n) / (((1 + r)**n) - 1)
+                    st.write("**Estimated EMI:** ₹{m:,.0f} / month".format(m=emi))
+
+                    # Site-visit dialog
+                    if st.button("Book visit", key="bk_{id}".format(id=p['id'])):
+                        book_visit_dialog(p)
+
+            st.markdown("</div>", unsafe_allow_html=True)  # close property-card
+
+# --------------------------------------------------
+# Quick contact + CSV
+# --------------------------------------------------
+st.markdown("---")
+st.subheader("Quick contact")
+qc1, qc2, qc3 = st.columns([2,2,3])
+with qc1: qn = st.text_input("Your name", key="qc_name")
+with qc2: qp = st.text_input("Phone", key="qc_phone")
+with qc3: qe = st.text_input("Email", key="qc_email")
+msg = st.text_area("Message", key="qc_msg")
+
+cc1, cc2 = st.columns(2)
+with cc1:
+    if st.button("Send message", key="send_msg"):
+        lead = {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "property_id": None, "title": None, "region": None,
+            "name": qn.strip(), "phone": qp.strip(), "email": qe.strip(),
+            "visit_date": "", "visit_time": "", "note": msg.strip(), "source": "contact_form"
+        }
+        st.session_state.leads.append(lead)
+        toast_ok("Message saved (demo).")
+with cc2with cc2:
+    if st.session_state.leads:
+        df = pd.DataFrame(st.session_state.leads)
+        st.download_button(
+            "Download leads (CSV)",
+            data=df.to_csv(index=False).encode("utf-8"),
+            file_name="leads.csv", mime="text/csv"
+        )
+    else:
+        st.button("Download leads (CSV)", key="dl_disabled", disabled=True)
+
