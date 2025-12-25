@@ -333,4 +333,4 @@ with cc2:
   else:
     st.button("Download leads (CSV)", disabled=True)
 
-st.caption("Prasad Realty
+st.caption("Prasad Realty Vizag.")
