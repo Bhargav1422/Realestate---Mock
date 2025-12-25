@@ -1,5 +1,5 @@
 
-# app.py — EstateVista (Streamlit prototype, stable copy-paste)
+# app.py — EstateVista (Streamlit prototype, compact & stable)
 
 import json
 from pathlib import Path
@@ -130,12 +130,12 @@ else:
             )
             st.caption(p["address"])
 
-            c1, c2 = st.columns(2)
-            with c1:
+            b1, b2 = st.columns(2)
+            with b1:
                 if st.button("Details", key=f"d_{p['id']}"):
                     cur = st.session_state.show_details.get(p["id"], False)
                     st.session_state.show_details[p["id"]] = not cur
-            with c2:
+            with b2:
                 if st.button("Contact", key=f"c_{p['id']}"):
                     cur = st.session_state.show_contact.get(p["id"], False)
                     st.session_state.show_contact[p["id"]] = not cur
@@ -152,11 +152,11 @@ else:
                     nm = st.text_input("Your name", key=f"nm_{p['id']}")
                     ph = st.text_input("Phone", key=f"ph_{p['id']}")
                     msg = st.text_area("Message", key=f"msg_{p['id']}")
-                                       cc1, cc2 = st.columns(2)
-                    with cc1:
+                    c1, c2 = st.columns(2)
+                    with c1:
                         if st.button("Send", key=f"send_{p['id']}"):
-                            st.success("Lead saved (demo). No backend call.")
-                    with cc2:
+                            st.success("Lead saved (demo                            st.success("Lead saved (demo). No backend call.")
+                    with c2:
                         if st.button("Close contact", key=f"closec_{p['id']}"):
                             st.session_state.show_contact[p["id"]] = False
 
