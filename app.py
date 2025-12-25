@@ -500,4 +500,4 @@ with cc2:
   else:
     st.button("Download leads (CSV)", key="dl_disabled", disabled=True)
 
-st.caption("Prasad Realty — Streamlit prototype · polished UI ·
+st.caption("Prasad Realty — prototype ")
